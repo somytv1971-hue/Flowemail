@@ -131,7 +131,7 @@ function WorkflowsTab() {
               className="h-8 w-52 pl-8"
             />
           </div>
-          <CreateWorkflowDialog onCreated={() => qc.invalidateQueries({ queryKey: ["workflows"] })} />
+          <CreateButton />
         </div>
       </div>
 
