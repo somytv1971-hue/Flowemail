@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      workflows: {
+        Row: {
+          completed: number
+          created_at: string
+          end_on: string | null
+          id: string
+          in_progress: number
+          name: string
+          start_on: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: number
+          created_at?: string
+          end_on?: string | null
+          id?: string
+          in_progress?: number
+          name: string
+          start_on?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: number
+          created_at?: string
+          end_on?: string | null
+          id?: string
+          in_progress?: number
+          name?: string
+          start_on?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
