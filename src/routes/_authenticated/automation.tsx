@@ -256,53 +256,24 @@ function DateCell({ iso }: { iso: string }) {
   );
 }
 
-function CreateWorkflowDialog({ onCreated }: { onCreated: () => void }) {
+function CreateButton() {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const create = useServerFn(createWorkflow);
-  const m = useMutation({
-    mutationFn: () => create({ data: { name } }),
-    onSuccess: () => {
-      toast.success("Workflow created");
-      setName("");
-      setOpen(false);
-      onCreated();
-    },
-    onError: (e: any) => toast.error(e.message ?? "Failed"),
-  });
-
+  const qc = useQueryClient();
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
-          <Plus className="h-4 w-4" /> Create workflow
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New workflow</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-2">
-          <Label>Workflow name</Label>
-          <Input
-            autoFocus
-            placeholder="e.g. Welcome new subscribers"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button disabled={!name.trim() || m.isPending} onClick={() => m.mutate()}>
-            {m.isPending ? "Creating…" : "Create"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Button size="sm" className="gap-1.5" onClick={() => setOpen(true)}>
+        <Plus className="h-4 w-4" /> Create workflow
+      </Button>
+      <CreateWorkflowDialog
+        open={open}
+        onOpenChange={setOpen}
+        onCreated={() => qc.invalidateQueries({ queryKey: ["workflows"] })}
+      />
+    </>
   );
 }
 
-function EmptyState({ onCreated }: { onCreated: () => void }) {
+function EmptyState({ onCreated: _onCreated }: { onCreated: () => void }) {
   return (
     <div className="flex flex-col items-center gap-4 py-16 text-center">
       <div className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground">
@@ -314,7 +285,7 @@ function EmptyState({ onCreated }: { onCreated: () => void }) {
           Create your first automation workflow to start engaging contacts.
         </p>
       </div>
-      <CreateWorkflowDialog onCreated={onCreated} />
+      <CreateButton />
     </div>
   );
 }
