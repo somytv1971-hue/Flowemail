@@ -257,19 +257,12 @@ function DateCell({ iso }: { iso: string }) {
 }
 
 function CreateButton() {
-  const [open, setOpen] = useState(false);
-  const qc = useQueryClient();
   return (
-    <>
-      <Button size="sm" className="gap-1.5" onClick={() => setOpen(true)}>
+    <Button size="sm" className="gap-1.5" asChild>
+      <Link to="/automation/workflows/new">
         <Plus className="h-4 w-4" /> Create workflow
-      </Button>
-      <CreateWorkflowDialog
-        open={open}
-        onOpenChange={setOpen}
-        onCreated={() => qc.invalidateQueries({ queryKey: ["workflows"] })}
-      />
-    </>
+      </Link>
+    </Button>
   );
 }
 
