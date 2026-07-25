@@ -8,7 +8,7 @@ import {
   updateWorkflow,
   deleteWorkflow,
 } from "@/lib/workflows.functions";
-import { CreateWorkflowDialog } from "@/components/create-workflow-dialog";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
