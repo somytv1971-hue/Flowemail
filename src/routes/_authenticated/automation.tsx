@@ -1,28 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { format } from "date-fns";
 import {
   listWorkflows,
-  createWorkflow,
   updateWorkflow,
   deleteWorkflow,
 } from "@/lib/workflows.functions";
+import { CreateWorkflowDialog } from "@/components/create-workflow-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -140,7 +131,7 @@ function WorkflowsTab() {
               className="h-8 w-52 pl-8"
             />
           </div>
-          <CreateWorkflowDialog onCreated={() => qc.invalidateQueries({ queryKey: ["workflows"] })} />
+          <CreateButton />
         </div>
       </div>
 
@@ -208,7 +199,15 @@ function WorkflowRow({ w }: { w: any }) {
       <td className="px-4 py-4">
         <Checkbox />
       </td>
-      <td className="px-4 py-4 font-medium">{w.name}</td>
+      <td className="px-4 py-4 font-medium">
+        <Link
+          to="/automation/workflows/$id"
+          params={{ id: w.id }}
+          className="text-primary hover:underline"
+        >
+          {w.name}
+        </Link>
+      </td>
       <td className="px-4 py-4">
         <div className="flex items-center gap-2">
           <Switch
@@ -257,53 +256,24 @@ function DateCell({ iso }: { iso: string }) {
   );
 }
 
-function CreateWorkflowDialog({ onCreated }: { onCreated: () => void }) {
+function CreateButton() {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const create = useServerFn(createWorkflow);
-  const m = useMutation({
-    mutationFn: () => create({ data: { name } }),
-    onSuccess: () => {
-      toast.success("Workflow created");
-      setName("");
-      setOpen(false);
-      onCreated();
-    },
-    onError: (e: any) => toast.error(e.message ?? "Failed"),
-  });
-
+  const qc = useQueryClient();
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
-          <Plus className="h-4 w-4" /> Create workflow
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New workflow</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-2">
-          <Label>Workflow name</Label>
-          <Input
-            autoFocus
-            placeholder="e.g. Welcome new subscribers"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button disabled={!name.trim() || m.isPending} onClick={() => m.mutate()}>
-            {m.isPending ? "Creating…" : "Create"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Button size="sm" className="gap-1.5" onClick={() => setOpen(true)}>
+        <Plus className="h-4 w-4" /> Create workflow
+      </Button>
+      <CreateWorkflowDialog
+        open={open}
+        onOpenChange={setOpen}
+        onCreated={() => qc.invalidateQueries({ queryKey: ["workflows"] })}
+      />
+    </>
   );
 }
 
-function EmptyState({ onCreated }: { onCreated: () => void }) {
+function EmptyState({ onCreated: _onCreated }: { onCreated: () => void }) {
   return (
     <div className="flex flex-col items-center gap-4 py-16 text-center">
       <div className="grid h-14 w-14 place-items-center rounded-2xl bg-accent text-accent-foreground">
@@ -315,7 +285,7 @@ function EmptyState({ onCreated }: { onCreated: () => void }) {
           Create your first automation workflow to start engaging contacts.
         </p>
       </div>
-      <CreateWorkflowDialog onCreated={onCreated} />
+      <CreateButton />
     </div>
   );
 }

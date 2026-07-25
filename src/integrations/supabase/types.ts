@@ -16,36 +16,45 @@ export type Database = {
     Tables: {
       workflows: {
         Row: {
+          channel: string
           completed: number
           created_at: string
           end_on: string | null
           id: string
           in_progress: number
           name: string
+          nodes: Json
+          start_element: string | null
           start_on: string
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          channel?: string
           completed?: number
           created_at?: string
           end_on?: string | null
           id?: string
           in_progress?: number
           name: string
+          nodes?: Json
+          start_element?: string | null
           start_on?: string
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          channel?: string
           completed?: number
           created_at?: string
           end_on?: string | null
           id?: string
           in_progress?: number
           name?: string
+          nodes?: Json
+          start_element?: string | null
           start_on?: string
           status?: string
           updated_at?: string

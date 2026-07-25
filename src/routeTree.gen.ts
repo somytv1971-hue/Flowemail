@@ -17,6 +17,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated/contacts'
 import { Route as AuthenticatedAutoresponderRouteImport } from './routes/_authenticated/autoresponder'
 import { Route as AuthenticatedAutomationRouteImport } from './routes/_authenticated/automation'
+import { Route as AuthenticatedAutomationWorkflowsIdRouteImport } from './routes/_authenticated/automation/workflows.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -58,35 +59,44 @@ const AuthenticatedAutomationRoute = AuthenticatedAutomationRouteImport.update({
   path: '/automation',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAutomationWorkflowsIdRoute =
+  AuthenticatedAutomationWorkflowsIdRouteImport.update({
+    id: '/workflows/$id',
+    path: '/workflows/$id',
+    getParentRoute: () => AuthenticatedAutomationRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/automation': typeof AuthenticatedAutomationRoute
+  '/automation': typeof AuthenticatedAutomationRouteWithChildren
   '/autoresponder': typeof AuthenticatedAutoresponderRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/automation': typeof AuthenticatedAutomationRoute
+  '/automation': typeof AuthenticatedAutomationRouteWithChildren
   '/autoresponder': typeof AuthenticatedAutoresponderRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/automation': typeof AuthenticatedAutomationRoute
+  '/_authenticated/automation': typeof AuthenticatedAutomationRouteWithChildren
   '/_authenticated/autoresponder': typeof AuthenticatedAutoresponderRoute
   '/_authenticated/contacts': typeof AuthenticatedContactsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/contacts'
     | '/dashboard'
     | '/reports'
+    | '/automation/workflows/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/contacts'
     | '/dashboard'
     | '/reports'
+    | '/automation/workflows/$id'
   id:
     | '__root__'
     | '/'
@@ -117,6 +129,7 @@ export interface FileRouteTypes {
     | '/_authenticated/contacts'
     | '/_authenticated/dashboard'
     | '/_authenticated/reports'
+    | '/_authenticated/automation/workflows/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -183,11 +196,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAutomationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/automation/workflows/$id': {
+      id: '/_authenticated/automation/workflows/$id'
+      path: '/workflows/$id'
+      fullPath: '/automation/workflows/$id'
+      preLoaderRoute: typeof AuthenticatedAutomationWorkflowsIdRouteImport
+      parentRoute: typeof AuthenticatedAutomationRoute
+    }
   }
 }
 
+interface AuthenticatedAutomationRouteChildren {
+  AuthenticatedAutomationWorkflowsIdRoute: typeof AuthenticatedAutomationWorkflowsIdRoute
+}
+
+const AuthenticatedAutomationRouteChildren: AuthenticatedAutomationRouteChildren =
+  {
+    AuthenticatedAutomationWorkflowsIdRoute:
+      AuthenticatedAutomationWorkflowsIdRoute,
+  }
+
+const AuthenticatedAutomationRouteWithChildren =
+  AuthenticatedAutomationRoute._addFileChildren(
+    AuthenticatedAutomationRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAutomationRoute: typeof AuthenticatedAutomationRoute
+  AuthenticatedAutomationRoute: typeof AuthenticatedAutomationRouteWithChildren
   AuthenticatedAutoresponderRoute: typeof AuthenticatedAutoresponderRoute
   AuthenticatedContactsRoute: typeof AuthenticatedContactsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -195,7 +230,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAutomationRoute: AuthenticatedAutomationRoute,
+  AuthenticatedAutomationRoute: AuthenticatedAutomationRouteWithChildren,
   AuthenticatedAutoresponderRoute: AuthenticatedAutoresponderRoute,
   AuthenticatedContactsRoute: AuthenticatedContactsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,

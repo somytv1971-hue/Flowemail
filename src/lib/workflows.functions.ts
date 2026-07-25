@@ -13,21 +13,46 @@ export const listWorkflows = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+export const getWorkflow = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("workflows")
+      .select("*")
+      .eq("id", data.id)
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
 const createSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  start_on: z.string().datetime().optional(),
+  channel: z.enum(["email", "web"]).default("email"),
+  start_element: z.string().min(1),
 });
 
 export const createWorkflow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data, context }) => {
+    const startNode = {
+      id: crypto.randomUUID(),
+      type: "start",
+      element: data.start_element,
+      channel: data.channel,
+      x: 400,
+      y: 80,
+    };
     const { data: row, error } = await context.supabase
       .from("workflows")
       .insert({
         user_id: context.userId,
         name: data.name,
-        start_on: data.start_on ?? new Date().toISOString(),
+        channel: data.channel,
+        start_element: data.start_element,
+        nodes: [startNode],
+        start_on: new Date().toISOString(),
         status: "published",
       })
       .select()
@@ -40,6 +65,7 @@ const updateSchema = z.object({
   id: z.string().uuid(),
   name: z.string().trim().min(1).max(120).optional(),
   status: z.enum(["published", "paused"]).optional(),
+  nodes: z.array(z.any()).optional(),
 });
 
 export const updateWorkflow = createServerFn({ method: "POST" })
