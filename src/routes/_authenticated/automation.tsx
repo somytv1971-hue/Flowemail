@@ -199,7 +199,15 @@ function WorkflowRow({ w }: { w: any }) {
       <td className="px-4 py-4">
         <Checkbox />
       </td>
-      <td className="px-4 py-4 font-medium">{w.name}</td>
+      <td className="px-4 py-4 font-medium">
+        <Link
+          to="/automation/workflows/$id"
+          params={{ id: w.id }}
+          className="text-primary hover:underline"
+        >
+          {w.name}
+        </Link>
+      </td>
       <td className="px-4 py-4">
         <div className="flex items-center gap-2">
           <Switch
