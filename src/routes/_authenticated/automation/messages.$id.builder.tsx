@@ -164,6 +164,13 @@ function BuilderPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<"layout" | "style">("layout");
   const [dragOver, setDragOver] = useState(false);
+  const [style, setStyle] = useState<MessageStyle>({
+    width: 600,
+    backgroundColor: "#FFFFFF",
+    backgroundImageOn: true,
+    imageUrl: "",
+    customCss: "",
+  });
 
   const addBlock = (type: BlockType, index?: number) => {
     const block = { key: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type };
