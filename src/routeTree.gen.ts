@@ -21,6 +21,7 @@ import { Route as AuthenticatedAutomationWorkflowsNewRouteImport } from './route
 import { Route as AuthenticatedAutomationWorkflowsIdRouteImport } from './routes/_authenticated/automation/workflows.$id'
 import { Route as AuthenticatedAutomationMessagesIdIndexRouteImport } from './routes/_authenticated/automation/messages.$id.index'
 import { Route as AuthenticatedAutomationMessagesIdDesignRouteImport } from './routes/_authenticated/automation/messages.$id.design'
+import { Route as AuthenticatedAutomationMessagesIdBuilderRouteImport } from './routes/_authenticated/automation/messages.$id.builder'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -87,6 +88,12 @@ const AuthenticatedAutomationMessagesIdDesignRoute =
     path: '/automation/messages/$id/design',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAutomationMessagesIdBuilderRoute =
+  AuthenticatedAutomationMessagesIdBuilderRouteImport.update({
+    id: '/automation/messages/$id/builder',
+    path: '/automation/messages/$id/builder',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/automation/': typeof AuthenticatedAutomationIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
+  '/automation/messages/$id/builder': typeof AuthenticatedAutomationMessagesIdBuilderRoute
   '/automation/messages/$id/design': typeof AuthenticatedAutomationMessagesIdDesignRoute
   '/automation/messages/$id/': typeof AuthenticatedAutomationMessagesIdIndexRoute
 }
@@ -111,6 +119,7 @@ export interface FileRoutesByTo {
   '/automation': typeof AuthenticatedAutomationIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
+  '/automation/messages/$id/builder': typeof AuthenticatedAutomationMessagesIdBuilderRoute
   '/automation/messages/$id/design': typeof AuthenticatedAutomationMessagesIdDesignRoute
   '/automation/messages/$id': typeof AuthenticatedAutomationMessagesIdIndexRoute
 }
@@ -126,6 +135,7 @@ export interface FileRoutesById {
   '/_authenticated/automation/': typeof AuthenticatedAutomationIndexRoute
   '/_authenticated/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/_authenticated/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
+  '/_authenticated/automation/messages/$id/builder': typeof AuthenticatedAutomationMessagesIdBuilderRoute
   '/_authenticated/automation/messages/$id/design': typeof AuthenticatedAutomationMessagesIdDesignRoute
   '/_authenticated/automation/messages/$id/': typeof AuthenticatedAutomationMessagesIdIndexRoute
 }
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/automation/'
     | '/automation/workflows/$id'
     | '/automation/workflows/new'
+    | '/automation/messages/$id/builder'
     | '/automation/messages/$id/design'
     | '/automation/messages/$id/'
   fileRoutesByTo: FileRoutesByTo
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/automation'
     | '/automation/workflows/$id'
     | '/automation/workflows/new'
+    | '/automation/messages/$id/builder'
     | '/automation/messages/$id/design'
     | '/automation/messages/$id'
   id:
@@ -168,6 +180,7 @@ export interface FileRouteTypes {
     | '/_authenticated/automation/'
     | '/_authenticated/automation/workflows/$id'
     | '/_authenticated/automation/workflows/new'
+    | '/_authenticated/automation/messages/$id/builder'
     | '/_authenticated/automation/messages/$id/design'
     | '/_authenticated/automation/messages/$id/'
   fileRoutesById: FileRoutesById
@@ -264,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAutomationMessagesIdDesignRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/automation/messages/$id/builder': {
+      id: '/_authenticated/automation/messages/$id/builder'
+      path: '/automation/messages/$id/builder'
+      fullPath: '/automation/messages/$id/builder'
+      preLoaderRoute: typeof AuthenticatedAutomationMessagesIdBuilderRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -275,6 +295,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAutomationIndexRoute: typeof AuthenticatedAutomationIndexRoute
   AuthenticatedAutomationWorkflowsIdRoute: typeof AuthenticatedAutomationWorkflowsIdRoute
   AuthenticatedAutomationWorkflowsNewRoute: typeof AuthenticatedAutomationWorkflowsNewRoute
+  AuthenticatedAutomationMessagesIdBuilderRoute: typeof AuthenticatedAutomationMessagesIdBuilderRoute
   AuthenticatedAutomationMessagesIdDesignRoute: typeof AuthenticatedAutomationMessagesIdDesignRoute
   AuthenticatedAutomationMessagesIdIndexRoute: typeof AuthenticatedAutomationMessagesIdIndexRoute
 }
@@ -289,6 +310,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedAutomationWorkflowsIdRoute,
   AuthenticatedAutomationWorkflowsNewRoute:
     AuthenticatedAutomationWorkflowsNewRoute,
+  AuthenticatedAutomationMessagesIdBuilderRoute:
+    AuthenticatedAutomationMessagesIdBuilderRoute,
   AuthenticatedAutomationMessagesIdDesignRoute:
     AuthenticatedAutomationMessagesIdDesignRoute,
   AuthenticatedAutomationMessagesIdIndexRoute:

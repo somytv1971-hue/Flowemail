@@ -251,7 +251,7 @@ function DesignPage() {
               <button
                 key={t.id}
                 type="button"
-                onClick={() => save.mutate({ layout: t.id })}
+                onClick={() => openBuilder.mutate(t.id)}
                 className={`group overflow-hidden rounded-xl border bg-card text-left shadow-sm transition hover:shadow-md ${
                   msg?.layout === t.id ? "ring-2 ring-primary" : ""
                 }`}
