@@ -13,7 +13,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import {
+  Plus,
   ChevronLeft,
   Undo2,
   Redo2,
@@ -164,6 +170,13 @@ function BuilderPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<"layout" | "style">("layout");
   const [dragOver, setDragOver] = useState(false);
+  const [style, setStyle] = useState<MessageStyle>({
+    width: 600,
+    backgroundColor: "#FFFFFF",
+    backgroundImageOn: true,
+    imageUrl: "",
+    customCss: "",
+  });
 
   const addBlock = (type: BlockType, index?: number) => {
     const block = { key: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type };
@@ -385,15 +398,189 @@ function BuilderPage() {
               ))}
             </Accordion>
           ) : (
-            <div className="space-y-4 p-5 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Message style</p>
-              <p className="text-xs">
-                Background, fonts and spacing settings for the whole message will appear here.
-              </p>
-            </div>
+            <MessageStylePanel style={style} setStyle={setStyle} />
           )}
         </aside>
       </div>
     </div>
+  );
+}
+
+type MessageStyle = {
+  width: number;
+  backgroundColor: string;
+  backgroundImageOn: boolean;
+  imageUrl: string;
+  customCss: string;
+};
+
+function MessageStylePanel({
+  style,
+  setStyle,
+}: {
+  style: MessageStyle;
+  setStyle: React.Dispatch<React.SetStateAction<MessageStyle>>;
+}) {
+  const set = <K extends keyof MessageStyle>(k: K, v: MessageStyle[K]) =>
+    setStyle((s) => ({ ...s, [k]: v }));
+
+  return (
+    <Accordion type="multiple" defaultValue={["general"]} className="px-2 pb-10">
+      <AccordionItem value="general">
+        <AccordionTrigger className="px-3 text-sm">General</AccordionTrigger>
+        <AccordionContent className="space-y-6 px-3 pb-5">
+          {/* Width */}
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-sm">Width</Label>
+              <div className="flex items-center overflow-hidden rounded-md border">
+                <button
+                  type="button"
+                  onClick={() => set("width", Math.max(320, style.width - 10))}
+                  className="px-2 py-1 text-muted-foreground hover:bg-muted"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <input
+                  value={style.width}
+                  onChange={(e) => set("width", Number(e.target.value) || 0)}
+                  className="w-14 border-x bg-transparent py-1 text-center text-sm outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => set("width", Math.min(900, style.width + 10))}
+                  className="px-2 py-1 text-muted-foreground hover:bg-muted"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+            <div className="mt-2 flex gap-2">
+              <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <p className="text-[11px] leading-snug text-muted-foreground">
+                We recommend you set the maximum message width as 600 pixels.
+                <br />
+                <span className="text-primary underline">
+                  Learn more about setting the right message width
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Background color */}
+          <div className="flex items-center justify-between gap-3">
+            <Label className="text-sm">Background color</Label>
+            <div className="flex items-center gap-2 rounded-md border px-2 py-1">
+              <input
+                type="color"
+                value={style.backgroundColor}
+                onChange={(e) => set("backgroundColor", e.target.value.toUpperCase())}
+                className="h-5 w-5 cursor-pointer rounded border bg-transparent p-0"
+              />
+              <input
+                value={style.backgroundColor}
+                onChange={(e) => set("backgroundColor", e.target.value)}
+                className="w-20 bg-transparent text-sm outline-none"
+              />
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Background image */}
+          <div className="flex items-center justify-between gap-3">
+            <Label className="text-sm">Background image</Label>
+            <Switch
+              checked={style.backgroundImageOn}
+              onCheckedChange={(v) => set("backgroundImageOn", v)}
+            />
+          </div>
+
+          {style.backgroundImageOn && (
+            <>
+              <div className="flex gap-4">
+                <div className="h-20 w-20 shrink-0 rounded border bg-[repeating-conic-gradient(hsl(var(--muted))_0%_25%,transparent_0%_50%)] bg-[length:12px_12px]" />
+                <div className="text-xs text-muted-foreground">
+                  <p>Resolution:</p>
+                  <p className="mt-1">Size:</p>
+                </div>
+              </div>
+              <button type="button" className="text-sm font-medium text-primary hover:underline">
+                Add image
+              </button>
+
+              <div>
+                <Label className="text-sm">Embed from a URL</Label>
+                <div className="mt-2 flex">
+                  <Input
+                    value={style.imageUrl}
+                    onChange={(e) => set("imageUrl", e.target.value)}
+                    placeholder="Enter image URL"
+                    className="rounded-r-none"
+                  />
+                  <Button variant="outline" className="rounded-l-none border-l-0">
+                    Go
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <ImageIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <p className="text-[11px] leading-snug text-muted-foreground">
+                  Images are not recognized by some email clients. You should also choose your
+                  fallback background color. In some versions of email clients such as Outlook for
+                  Windows, the background image will always be repeated.
+                  <br />
+                  <span className="text-primary underline">
+                    How to add a message background image
+                  </span>
+                </p>
+              </div>
+            </>
+          )}
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="theme">
+        <AccordionTrigger className="px-3 text-sm">
+          Theme
+          <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[9px] font-semibold text-primary-foreground">
+            NEW
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="px-3 pb-4 text-xs text-muted-foreground">
+          Pick a theme to apply consistent colors and fonts across the whole message.
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="header">
+        <AccordionTrigger className="px-3 text-sm">Header</AccordionTrigger>
+        <AccordionContent className="px-3 pb-4 text-xs text-muted-foreground">
+          Configure the header area shown above your message content.
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="footer">
+        <AccordionTrigger className="px-3 text-sm">Footer</AccordionTrigger>
+        <AccordionContent className="px-3 pb-4 text-xs text-muted-foreground">
+          Configure the footer, address block and unsubscribe links.
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="css">
+        <AccordionTrigger className="px-3 text-sm">Custom CSS</AccordionTrigger>
+        <AccordionContent className="px-3 pb-4">
+          <Textarea
+            rows={5}
+            value={style.customCss}
+            onChange={(e) => set("customCss", e.target.value)}
+            placeholder=".my-class { color: #333; }"
+            className="font-mono text-xs"
+          />
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
