@@ -30,7 +30,7 @@ import {
 import { Plus, Search, MoreVertical, Trash2, Zap, Info } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/automation")({
+export const Route = createFileRoute("/_authenticated/automation/")({
   head: () => ({
     meta: [
       { title: "Automation — Flowmail" },
