@@ -385,12 +385,7 @@ function BuilderPage() {
               ))}
             </Accordion>
           ) : (
-            <div className="space-y-4 p-5 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">Message style</p>
-              <p className="text-xs">
-                Background, fonts and spacing settings for the whole message will appear here.
-              </p>
-            </div>
+            <MessageStylePanel style={style} setStyle={setStyle} />
           )}
         </aside>
       </div>
