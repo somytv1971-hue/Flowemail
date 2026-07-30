@@ -138,6 +138,15 @@ function DesignPage() {
     onError: (e: any) => toast.error(e.message ?? "Could not save"),
   });
 
+  const openBuilder = useMutation({
+    mutationFn: (layout: string) => update({ data: { id, layout } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["automation-message", id] });
+      navigate({ to: "/automation/messages/$id/builder", params: { id } });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Could not open builder"),
+  });
+
   return (
     <div className="pb-12">
       <div className="relative flex items-center justify-center">
