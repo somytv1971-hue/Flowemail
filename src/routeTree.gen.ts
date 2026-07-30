@@ -16,7 +16,7 @@ import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated/contacts'
 import { Route as AuthenticatedAutoresponderRouteImport } from './routes/_authenticated/autoresponder'
-import { Route as AuthenticatedAutomationRouteImport } from './routes/_authenticated/automation'
+import { Route as AuthenticatedAutomationIndexRouteImport } from './routes/_authenticated/automation/index'
 import { Route as AuthenticatedAutomationWorkflowsNewRouteImport } from './routes/_authenticated/automation/workflows.new'
 import { Route as AuthenticatedAutomationWorkflowsIdRouteImport } from './routes/_authenticated/automation/workflows.$id'
 
@@ -55,43 +55,44 @@ const AuthenticatedAutoresponderRoute =
     path: '/autoresponder',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAutomationRoute = AuthenticatedAutomationRouteImport.update({
-  id: '/automation',
-  path: '/automation',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
+const AuthenticatedAutomationIndexRoute =
+  AuthenticatedAutomationIndexRouteImport.update({
+    id: '/automation/',
+    path: '/automation/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAutomationWorkflowsNewRoute =
   AuthenticatedAutomationWorkflowsNewRouteImport.update({
-    id: '/workflows/new',
-    path: '/workflows/new',
-    getParentRoute: () => AuthenticatedAutomationRoute,
+    id: '/automation/workflows/new',
+    path: '/automation/workflows/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAutomationWorkflowsIdRoute =
   AuthenticatedAutomationWorkflowsIdRouteImport.update({
-    id: '/workflows/$id',
-    path: '/workflows/$id',
-    getParentRoute: () => AuthenticatedAutomationRoute,
+    id: '/automation/workflows/$id',
+    path: '/automation/workflows/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/automation': typeof AuthenticatedAutomationRouteWithChildren
   '/autoresponder': typeof AuthenticatedAutoresponderRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/automation/': typeof AuthenticatedAutomationIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/automation': typeof AuthenticatedAutomationRouteWithChildren
   '/autoresponder': typeof AuthenticatedAutoresponderRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/automation': typeof AuthenticatedAutomationIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
 }
@@ -100,11 +101,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/automation': typeof AuthenticatedAutomationRouteWithChildren
   '/_authenticated/autoresponder': typeof AuthenticatedAutoresponderRoute
   '/_authenticated/contacts': typeof AuthenticatedContactsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/automation/': typeof AuthenticatedAutomationIndexRoute
   '/_authenticated/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/_authenticated/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
 }
@@ -113,22 +114,22 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
-    | '/automation'
     | '/autoresponder'
     | '/contacts'
     | '/dashboard'
     | '/reports'
+    | '/automation/'
     | '/automation/workflows/$id'
     | '/automation/workflows/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
-    | '/automation'
     | '/autoresponder'
     | '/contacts'
     | '/dashboard'
     | '/reports'
+    | '/automation'
     | '/automation/workflows/$id'
     | '/automation/workflows/new'
   id:
@@ -136,11 +137,11 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
-    | '/_authenticated/automation'
     | '/_authenticated/autoresponder'
     | '/_authenticated/contacts'
     | '/_authenticated/dashboard'
     | '/_authenticated/reports'
+    | '/_authenticated/automation/'
     | '/_authenticated/automation/workflows/$id'
     | '/_authenticated/automation/workflows/new'
   fileRoutesById: FileRoutesById
@@ -202,62 +203,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAutoresponderRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/automation': {
-      id: '/_authenticated/automation'
+    '/_authenticated/automation/': {
+      id: '/_authenticated/automation/'
       path: '/automation'
-      fullPath: '/automation'
-      preLoaderRoute: typeof AuthenticatedAutomationRouteImport
+      fullPath: '/automation/'
+      preLoaderRoute: typeof AuthenticatedAutomationIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/automation/workflows/new': {
       id: '/_authenticated/automation/workflows/new'
-      path: '/workflows/new'
+      path: '/automation/workflows/new'
       fullPath: '/automation/workflows/new'
       preLoaderRoute: typeof AuthenticatedAutomationWorkflowsNewRouteImport
-      parentRoute: typeof AuthenticatedAutomationRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/automation/workflows/$id': {
       id: '/_authenticated/automation/workflows/$id'
-      path: '/workflows/$id'
+      path: '/automation/workflows/$id'
       fullPath: '/automation/workflows/$id'
       preLoaderRoute: typeof AuthenticatedAutomationWorkflowsIdRouteImport
-      parentRoute: typeof AuthenticatedAutomationRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-interface AuthenticatedAutomationRouteChildren {
-  AuthenticatedAutomationWorkflowsIdRoute: typeof AuthenticatedAutomationWorkflowsIdRoute
-  AuthenticatedAutomationWorkflowsNewRoute: typeof AuthenticatedAutomationWorkflowsNewRoute
-}
-
-const AuthenticatedAutomationRouteChildren: AuthenticatedAutomationRouteChildren =
-  {
-    AuthenticatedAutomationWorkflowsIdRoute:
-      AuthenticatedAutomationWorkflowsIdRoute,
-    AuthenticatedAutomationWorkflowsNewRoute:
-      AuthenticatedAutomationWorkflowsNewRoute,
-  }
-
-const AuthenticatedAutomationRouteWithChildren =
-  AuthenticatedAutomationRoute._addFileChildren(
-    AuthenticatedAutomationRouteChildren,
-  )
-
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAutomationRoute: typeof AuthenticatedAutomationRouteWithChildren
   AuthenticatedAutoresponderRoute: typeof AuthenticatedAutoresponderRoute
   AuthenticatedContactsRoute: typeof AuthenticatedContactsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedAutomationIndexRoute: typeof AuthenticatedAutomationIndexRoute
+  AuthenticatedAutomationWorkflowsIdRoute: typeof AuthenticatedAutomationWorkflowsIdRoute
+  AuthenticatedAutomationWorkflowsNewRoute: typeof AuthenticatedAutomationWorkflowsNewRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAutomationRoute: AuthenticatedAutomationRouteWithChildren,
   AuthenticatedAutoresponderRoute: AuthenticatedAutoresponderRoute,
   AuthenticatedContactsRoute: AuthenticatedContactsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedAutomationIndexRoute: AuthenticatedAutomationIndexRoute,
+  AuthenticatedAutomationWorkflowsIdRoute:
+    AuthenticatedAutomationWorkflowsIdRoute,
+  AuthenticatedAutomationWorkflowsNewRoute:
+    AuthenticatedAutomationWorkflowsNewRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
