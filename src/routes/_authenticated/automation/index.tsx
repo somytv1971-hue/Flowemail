@@ -67,8 +67,9 @@ function AutomationPage() {
           <WorkflowsTab />
         </TabsContent>
         <TabsContent value="messages" className="mt-6">
-          <ComingSoon title="Automation messages" />
+          <AutomationMessagesTab />
         </TabsContent>
+
         <TabsContent value="events" className="mt-6">
           <ComingSoon title="Events" />
         </TabsContent>
