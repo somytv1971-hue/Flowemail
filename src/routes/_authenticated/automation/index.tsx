@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/select";
 import { Plus, Search, MoreVertical, Trash2, Zap, Info } from "lucide-react";
 import { toast } from "sonner";
+import { AutomationMessagesTab } from "@/components/automation-messages-tab";
+
 
 export const Route = createFileRoute("/_authenticated/automation/")({
   head: () => ({
@@ -67,8 +69,9 @@ function AutomationPage() {
           <WorkflowsTab />
         </TabsContent>
         <TabsContent value="messages" className="mt-6">
-          <ComingSoon title="Automation messages" />
+          <AutomationMessagesTab />
         </TabsContent>
+
         <TabsContent value="events" className="mt-6">
           <ComingSoon title="Events" />
         </TabsContent>

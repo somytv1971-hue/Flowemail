@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      automation_messages: {
+        Row: {
+          click_rate: number | null
+          content_html: string
+          created_at: string
+          delivered: number
+          from_email: string
+          id: string
+          layout: string | null
+          list_name: string
+          name: string
+          open_rate: number | null
+          preview_text: string
+          reply_to: string
+          status: string
+          subject: string
+          track_clicks: boolean
+          track_opens: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          click_rate?: number | null
+          content_html?: string
+          created_at?: string
+          delivered?: number
+          from_email?: string
+          id?: string
+          layout?: string | null
+          list_name?: string
+          name?: string
+          open_rate?: number | null
+          preview_text?: string
+          reply_to?: string
+          status?: string
+          subject?: string
+          track_clicks?: boolean
+          track_opens?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          click_rate?: number | null
+          content_html?: string
+          created_at?: string
+          delivered?: number
+          from_email?: string
+          id?: string
+          layout?: string | null
+          list_name?: string
+          name?: string
+          open_rate?: number | null
+          preview_text?: string
+          reply_to?: string
+          status?: string
+          subject?: string
+          track_clicks?: boolean
+          track_opens?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       workflows: {
         Row: {
           channel: string
