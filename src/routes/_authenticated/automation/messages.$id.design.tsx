@@ -138,6 +138,15 @@ function DesignPage() {
     onError: (e: any) => toast.error(e.message ?? "Could not save"),
   });
 
+  const openBuilder = useMutation({
+    mutationFn: (layout: string) => update({ data: { id, layout } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["automation-message", id] });
+      navigate({ to: "/automation/messages/$id/builder", params: { id } });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Could not open builder"),
+  });
+
   return (
     <div className="pb-12">
       <div className="relative flex items-center justify-center">
@@ -251,7 +260,7 @@ function DesignPage() {
               <button
                 key={t.id}
                 type="button"
-                onClick={() => save.mutate({ layout: t.id })}
+                onClick={() => openBuilder.mutate(t.id)}
                 className={`group overflow-hidden rounded-xl border bg-card text-left shadow-sm transition hover:shadow-md ${
                   msg?.layout === t.id ? "ring-2 ring-primary" : ""
                 }`}
