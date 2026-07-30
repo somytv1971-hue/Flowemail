@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/automation/messages/$id")({
+export const Route = createFileRoute("/_authenticated/automation/messages/$id/")({
   head: () => ({
     meta: [
       { title: "Automation message — Flowmail" },
