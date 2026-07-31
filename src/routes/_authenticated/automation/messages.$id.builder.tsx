@@ -1478,3 +1478,144 @@ function ThemePanel({ onApply }: { onApply: (backgroundColor: string) => void })
     </div>
   );
 }
+
+function LogoUploader({
+  value,
+  alt,
+  onChange,
+}: {
+  value: string;
+  alt: string;
+  onChange: (url: string) => void;
+}) {
+  const [urlDraft, setUrlDraft] = useState("");
+  const [dragOver, setDragOver] = useState(false);
+  const [meta, setMeta] = useState<{ resolution: string; size: string }>({
+    resolution: "—",
+    size: "—",
+  });
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const readFile = (file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be smaller than 5 MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      const img = new Image();
+      img.onload = () =>
+        setMeta({
+          resolution: `${img.naturalWidth} × ${img.naturalHeight} px`,
+          size: `${(file.size / 1024).toFixed(0)} KB`,
+        });
+      img.src = reader.result;
+      onChange(reader.result);
+      toast.success("Logo uploaded");
+    };
+    reader.onerror = () => toast.error("Could not read the file");
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-4">
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded border bg-[repeating-linear-gradient(45deg,hsl(var(--muted))_0_6px,transparent_6px_12px)]">
+          {value ? (
+            <img src={value} alt={alt || "Logo preview"} className="max-h-full max-w-full object-contain" />
+          ) : null}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          <p>Resolution: {value ? meta.resolution : "—"}</p>
+          <p className="mt-1">Size: {value ? meta.size : "—"}</p>
+          {value ? (
+            <button
+              type="button"
+              className="mt-2 text-destructive hover:underline"
+              onClick={() => {
+                onChange("");
+                setMeta({ resolution: "—", size: "—" });
+              }}
+            >
+              Remove logo
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && inputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          readFile(e.dataTransfer.files?.[0]);
+        }}
+        className={`cursor-pointer rounded-md border border-dashed p-4 text-center text-xs transition-colors ${
+          dragOver ? "border-primary bg-primary/5 text-primary" : "text-muted-foreground"
+        }`}
+      >
+        <p className="font-medium text-foreground">
+          {value ? "Replace image" : "Upload image from your device"}
+        </p>
+        <p className="mt-1">Drag &amp; drop or click to browse — PNG, JPG, GIF, SVG up to 5 MB</p>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(event) => {
+            readFile(event.target.files?.[0]);
+            event.target.value = "";
+          }}
+        />
+      </div>
+
+      <div>
+        <Label className="text-sm">Embed from a URL</Label>
+        <div className="mt-2 flex">
+          <Input
+            value={urlDraft}
+            onChange={(e) => setUrlDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              if (!urlDraft.trim()) return toast.error("Enter an image URL");
+              onChange(urlDraft.trim());
+              setMeta({ resolution: "—", size: "—" });
+              toast.success("Logo updated");
+            }}
+            placeholder="Enter image URL"
+            className="rounded-r-none"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-l-none border-l-0"
+            onClick={() => {
+              if (!urlDraft.trim()) return toast.error("Enter an image URL");
+              onChange(urlDraft.trim());
+              setMeta({ resolution: "—", size: "—" });
+              toast.success("Logo updated");
+            }}
+          >
+            Go
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
