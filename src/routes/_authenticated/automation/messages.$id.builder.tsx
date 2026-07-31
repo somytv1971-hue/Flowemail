@@ -2,10 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  getAutomationMessage,
-  updateAutomationMessage,
-} from "@/lib/automation-messages.functions";
+import { getAutomationMessage, updateAutomationMessage } from "@/lib/automation-messages.functions";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -331,7 +328,7 @@ function BuilderPage() {
         },
       }),
     onSuccess: () => toast.success("Saved"),
-    onError: (e: any) => toast.error(e.message ?? "Could not save"),
+    onError: (error: Error) => toast.error(error.message || "Could not save"),
   });
 
   return (
