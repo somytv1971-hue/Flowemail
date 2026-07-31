@@ -343,7 +343,13 @@ function BuilderPage() {
           <ChevronLeft className="h-4 w-4" /> Back to design and content
         </button>
         <div className="ml-2 flex items-center gap-2 text-muted-foreground">
-          <Button variant="ghost" size="icon" onClick={undo} disabled={!history.length} title="Undo">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={undo}
+            disabled={!history.length}
+            title="Undo"
+          >
             <Undo2 className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" onClick={redo} disabled={!future.length} title="Redo">
@@ -354,12 +360,20 @@ function BuilderPage() {
           </span>
         </div>
         <div className="ml-auto flex items-center gap-4">
-          <button type="button" onClick={() => setPreviewOpen(true)} className="text-sm font-medium text-primary hover:underline">
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="text-sm font-medium text-primary hover:underline"
+          >
             Test and preview
           </button>
           <button
             type="button"
-            onClick={() => save.mutate(undefined, { onSuccess: () => navigate({ to: "/automation/messages/$id", params: { id } }) })}
+            onClick={() =>
+              save.mutate(undefined, {
+                onSuccess: () => navigate({ to: "/automation/messages/$id", params: { id } }),
+              })
+            }
             className="text-sm font-medium text-primary hover:underline"
           >
             Save and exit
@@ -368,8 +382,7 @@ function BuilderPage() {
             className="rounded-full px-6"
             onClick={() =>
               save.mutate(undefined, {
-                onSuccess: () =>
-                  navigate({ to: "/automation/messages/$id", params: { id } }),
+                onSuccess: () => navigate({ to: "/automation/messages/$id", params: { id } }),
               })
             }
           >
@@ -382,7 +395,11 @@ function BuilderPage() {
         {/* Canvas */}
         <div
           className="min-w-0 flex-1 overflow-y-auto bg-muted/40 p-8"
-          style={{ backgroundColor: style.backgroundColor, backgroundImage: style.backgroundImageOn && style.imageUrl ? `url(${style.imageUrl})` : undefined }}
+          style={{
+            backgroundColor: style.backgroundColor,
+            backgroundImage:
+              style.backgroundImageOn && style.imageUrl ? `url(${style.imageUrl})` : undefined,
+          }}
         >
           <div className="mx-auto" style={{ maxWidth: `${style.width}px` }}>
             <div
@@ -394,7 +411,9 @@ function BuilderPage() {
               }}
             >
               {header.mode === "online" ? (
-                <a href="#preview" className="text-primary underline">View this message online</a>
+                <a href="#preview" className="text-primary underline">
+                  View this message online
+                </a>
               ) : header.imageUrl ? (
                 <img
                   src={header.imageUrl}
@@ -416,10 +435,10 @@ function BuilderPage() {
               onDrop={(e) => {
                 e.preventDefault();
                 setDragOver(false);
-                  const type = e.dataTransfer.getData("text/block") as BlockType;
-                  const layout = e.dataTransfer.getData("text/section") as SectionLayout;
-                  if (type) addBlock(type);
-                  if (layout) addSection(layout);
+                const type = e.dataTransfer.getData("text/block") as BlockType;
+                const layout = e.dataTransfer.getData("text/section") as SectionLayout;
+                if (type) addBlock(type);
+                if (layout) addSection(layout);
               }}
               className={`rounded-lg border-2 border-dashed bg-card p-4 transition ${
                 dragOver ? "border-primary bg-primary/5" : "border-border"
@@ -502,8 +521,14 @@ function BuilderPage() {
               <p>{msg?.list_name || "Your company"}, 1700, Business street, City, Country</p>
               <p>
                 You can{" "}
-                <span className="underline" style={{ color: footer.linksColor }}>unsubscribe</span> or{" "}
-                <span className="underline" style={{ color: footer.linksColor }}>change your details</span> at any time.
+                <span className="underline" style={{ color: footer.linksColor }}>
+                  unsubscribe
+                </span>{" "}
+                or{" "}
+                <span className="underline" style={{ color: footer.linksColor }}>
+                  change your details
+                </span>{" "}
+                at any time.
               </p>
             </footer>
           </div>
@@ -561,7 +586,9 @@ function BuilderPage() {
                       onChange={(event) => updateSelected({ content: event.target.value })}
                       placeholder="Edit block content"
                     />
-                    {(["image", "video", "button"] as BlockType[]).includes(blocks.find((block) => block.key === selected)?.type ?? "text") && (
+                    {(["image", "video", "button"] as BlockType[]).includes(
+                      blocks.find((block) => block.key === selected)?.type ?? "text",
+                    ) && (
                       <Input
                         value={blocks.find((block) => block.key === selected)?.url ?? ""}
                         onChange={(event) => updateSelected({ url: event.target.value })}
@@ -635,9 +662,16 @@ function BuilderPage() {
             <DialogTitle>Message preview</DialogTitle>
             <DialogDescription>Desktop preview of the saved email content.</DialogDescription>
           </DialogHeader>
-          <div className="mx-auto w-full rounded border bg-card p-6" style={{ maxWidth: `${style.width}px` }}>
+          <div
+            className="mx-auto w-full rounded border bg-card p-6"
+            style={{ maxWidth: `${style.width}px` }}
+          >
             <div className="space-y-3">
-              {blocks.length ? blocks.map((block) => <BlockPreview key={block.key} block={block} />) : <p className="text-center text-sm text-muted-foreground">Your message is empty.</p>}
+              {blocks.length ? (
+                blocks.map((block) => <BlockPreview key={block.key} block={block} />)
+              ) : (
+                <p className="text-center text-sm text-muted-foreground">Your message is empty.</p>
+              )}
             </div>
           </div>
         </DialogContent>
@@ -765,7 +799,8 @@ function MessageStylePanel({
                     const file = event.target.files?.[0];
                     if (!file) return;
                     const reader = new FileReader();
-                    reader.onload = () => typeof reader.result === "string" && set("imageUrl", reader.result);
+                    reader.onload = () =>
+                      typeof reader.result === "string" && set("imageUrl", reader.result);
                     reader.readAsDataURL(file);
                   }}
                 />
@@ -784,7 +819,11 @@ function MessageStylePanel({
                     type="button"
                     variant="outline"
                     className="rounded-l-none border-l-0"
-                    onClick={() => style.imageUrl ? toast.success("Background image applied") : toast.error("Enter an image URL")}
+                    onClick={() =>
+                      style.imageUrl
+                        ? toast.success("Background image applied")
+                        : toast.error("Enter an image URL")
+                    }
                   >
                     Go
                   </Button>
@@ -826,7 +865,6 @@ function MessageStylePanel({
           <HeaderPanel value={header} onChange={setHeader} />
         </AccordionContent>
       </AccordionItem>
-
 
       <AccordionItem value="footer">
         <AccordionTrigger className="px-3 text-sm">Footer</AccordionTrigger>
@@ -973,7 +1011,8 @@ function HeaderPanel({
                 const file = event.target.files?.[0];
                 if (!file) return;
                 const reader = new FileReader();
-                reader.onload = () => typeof reader.result === "string" && set("imageUrl", reader.result);
+                reader.onload = () =>
+                  typeof reader.result === "string" && set("imageUrl", reader.result);
                 reader.readAsDataURL(file);
               }}
             />
@@ -988,7 +1027,14 @@ function HeaderPanel({
                 placeholder="Enter image URL"
                 className="rounded-r-none"
               />
-              <Button type="button" variant="outline" className="rounded-l-none border-l-0" onClick={() => h.imageUrl ? toast.success("Logo updated") : toast.error("Enter an image URL") }>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-l-none border-l-0"
+                onClick={() =>
+                  h.imageUrl ? toast.success("Logo updated") : toast.error("Enter an image URL")
+                }
+              >
                 Go
               </Button>
             </div>
@@ -1172,9 +1218,7 @@ function FooterPanel({
             You cannot remove or hide the unsubscribe link or any other footer element required by
             consumer privacy and anti-spam laws.
           </p>
-          <p>
-            The physical address displayed in the footer is taken from the linked list.
-          </p>
+          <p>The physical address displayed in the footer is taken from the linked list.</p>
           <button type="button" className="font-medium text-primary hover:underline">
             Learn more about footer requirements
           </button>
@@ -1203,10 +1247,7 @@ function FooterPanel({
             ))}
           </select>
           <label className="flex h-9 cursor-pointer items-center gap-2 rounded-md border px-2">
-            <span
-              className="h-5 w-5 rounded-sm border"
-              style={{ backgroundColor: f.textColor }}
-            />
+            <span className="h-5 w-5 rounded-sm border" style={{ backgroundColor: f.textColor }} />
             <span className="text-xs">{f.textColor.toUpperCase()}</span>
             <input
               type="color"
@@ -1229,7 +1270,9 @@ function FooterPanel({
               type="button"
               onClick={() => set(b.key, !f[b.key])}
               className={`w-10 py-1.5 text-sm ${b.cls} ${
-                f[b.key] ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                f[b.key]
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
               }`}
             >
               {b.label}
@@ -1401,7 +1444,9 @@ function ThemePanel({ onApply }: { onApply: (backgroundColor: string) => void })
                 <input
                   value={c.value}
                   onChange={(e) =>
-                    setColors((s) => s.map((x, xi) => (xi === i ? { ...x, value: e.target.value } : x)))
+                    setColors((s) =>
+                      s.map((x, xi) => (xi === i ? { ...x, value: e.target.value } : x)),
+                    )
                   }
                   className="w-20 bg-transparent text-xs outline-none"
                 />
