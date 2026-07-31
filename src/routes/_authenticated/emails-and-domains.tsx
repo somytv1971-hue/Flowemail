@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import {
   Search,
   X,
@@ -294,8 +294,8 @@ function Page() {
                 {filtered.map((row) => {
                   const open = expanded.includes(row.id);
                   return (
-                    <>
-                      <tr key={row.id} className="border-b">
+                    <Fragment key={row.id}>
+                      <tr className="border-b">
                         <td className="py-4 pr-4">
                           <button
                             onClick={() => toggle(row.id)}
@@ -365,7 +365,7 @@ function Page() {
                         </td>
                       </tr>
                       {open && (
-                        <tr key={`${row.id}-detail`} className="border-b bg-muted/40">
+                        <tr className="border-b bg-muted/40">
                           <td colSpan={5} className="p-4">
                             <table className="w-full text-sm">
                               <thead>
@@ -428,7 +428,7 @@ function Page() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>

@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedEmailsAndDomainsRouteImport } from './routes/_authenticated/emails-and-domains'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated/contacts'
 import { Route as AuthenticatedAutoresponderRouteImport } from './routes/_authenticated/autoresponder'
@@ -42,6 +43,12 @@ const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEmailsAndDomainsRoute =
+  AuthenticatedEmailsAndDomainsRouteImport.update({
+    id: '/emails-and-domains',
+    path: '/emails-and-domains',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -101,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/autoresponder': typeof AuthenticatedAutoresponderRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/emails-and-domains': typeof AuthenticatedEmailsAndDomainsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/automation/': typeof AuthenticatedAutomationIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
@@ -115,6 +123,7 @@ export interface FileRoutesByTo {
   '/autoresponder': typeof AuthenticatedAutoresponderRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/emails-and-domains': typeof AuthenticatedEmailsAndDomainsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/automation': typeof AuthenticatedAutomationIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
@@ -131,6 +140,7 @@ export interface FileRoutesById {
   '/_authenticated/autoresponder': typeof AuthenticatedAutoresponderRoute
   '/_authenticated/contacts': typeof AuthenticatedContactsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/emails-and-domains': typeof AuthenticatedEmailsAndDomainsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/automation/': typeof AuthenticatedAutomationIndexRoute
   '/_authenticated/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/autoresponder'
     | '/contacts'
     | '/dashboard'
+    | '/emails-and-domains'
     | '/reports'
     | '/automation/'
     | '/automation/workflows/$id'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/autoresponder'
     | '/contacts'
     | '/dashboard'
+    | '/emails-and-domains'
     | '/reports'
     | '/automation'
     | '/automation/workflows/$id'
@@ -176,6 +188,7 @@ export interface FileRouteTypes {
     | '/_authenticated/autoresponder'
     | '/_authenticated/contacts'
     | '/_authenticated/dashboard'
+    | '/_authenticated/emails-and-domains'
     | '/_authenticated/reports'
     | '/_authenticated/automation/'
     | '/_authenticated/automation/workflows/$id'
@@ -219,6 +232,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/emails-and-domains': {
+      id: '/_authenticated/emails-and-domains'
+      path: '/emails-and-domains'
+      fullPath: '/emails-and-domains'
+      preLoaderRoute: typeof AuthenticatedEmailsAndDomainsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -291,6 +311,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAutoresponderRoute: typeof AuthenticatedAutoresponderRoute
   AuthenticatedContactsRoute: typeof AuthenticatedContactsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEmailsAndDomainsRoute: typeof AuthenticatedEmailsAndDomainsRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedAutomationIndexRoute: typeof AuthenticatedAutomationIndexRoute
   AuthenticatedAutomationWorkflowsIdRoute: typeof AuthenticatedAutomationWorkflowsIdRoute
@@ -304,6 +325,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAutoresponderRoute: AuthenticatedAutoresponderRoute,
   AuthenticatedContactsRoute: AuthenticatedContactsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEmailsAndDomainsRoute: AuthenticatedEmailsAndDomainsRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedAutomationIndexRoute: AuthenticatedAutomationIndexRoute,
   AuthenticatedAutomationWorkflowsIdRoute:
@@ -329,3 +351,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
