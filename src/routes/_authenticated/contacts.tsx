@@ -652,10 +652,37 @@ function AddContactsDialog({
 
   const readFile = async (file: File | undefined) => {
     if (!file) return;
-    const text = await file.text();
     setFileName(file.name);
-    setRaw(text);
+    const isSheet = /\.(xlsx|xls|xlsm|ods)$/i.test(file.name);
+    try {
+      if (isSheet) {
+        const XLSX = await import("xlsx");
+        const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+        const emails = new Set<string>();
+        for (const name of wb.SheetNames) {
+          const sheet = wb.Sheets[name];
+          if (!sheet) continue;
+          const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
+          for (const row of rows) {
+            for (const cell of row ?? []) {
+              const v = String(cell ?? "").trim();
+              if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) emails.add(v.toLowerCase());
+            }
+          }
+        }
+        if (emails.size === 0) {
+          toast.error("No email addresses found in that file");
+          return;
+        }
+        setRaw([...emails].join("\n"));
+      } else {
+        setRaw(await file.text());
+      }
+    } catch {
+      toast.error("Could not read that file");
+    }
   };
+
 
   const listPicker = (
     <div className="space-y-2">
