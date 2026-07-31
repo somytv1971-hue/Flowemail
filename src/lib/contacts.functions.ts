@@ -97,10 +97,16 @@ export const addContactsBulk = createServerFn({ method: "POST" })
     z.object({ list_id: z.string().uuid(), raw: z.string().min(1) }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    const seen = new Set<string>();
     const rows = data.raw
-      .split(/[\n,;]+/)
-      .map((s) => s.trim())
+      .split(/[\n,;\s]+/)
+      .map((s) => s.trim().toLowerCase())
       .filter((s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s))
+      .filter((email) => {
+        if (seen.has(email)) return false;
+        seen.add(email);
+        return true;
+      })
       .map((email) => ({
         user_id: context.userId,
         list_id: data.list_id,
@@ -108,6 +114,7 @@ export const addContactsBulk = createServerFn({ method: "POST" })
         status: "subscribed",
       }));
     if (rows.length === 0) return { inserted: 0 };
+
     const { error } = await context.supabase
       .from("contacts")
       .upsert(rows, { onConflict: "user_id,list_id,email" });

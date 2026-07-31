@@ -652,10 +652,37 @@ function AddContactsDialog({
 
   const readFile = async (file: File | undefined) => {
     if (!file) return;
-    const text = await file.text();
     setFileName(file.name);
-    setRaw(text);
+    const isSheet = /\.(xlsx|xls|xlsm|ods)$/i.test(file.name);
+    try {
+      if (isSheet) {
+        const XLSX = await import("xlsx");
+        const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+        const emails = new Set<string>();
+        for (const name of wb.SheetNames) {
+          const sheet = wb.Sheets[name];
+          if (!sheet) continue;
+          const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
+          for (const row of rows) {
+            for (const cell of row ?? []) {
+              const v = String(cell ?? "").trim();
+              if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) emails.add(v.toLowerCase());
+            }
+          }
+        }
+        if (emails.size === 0) {
+          toast.error("No email addresses found in that file");
+          return;
+        }
+        setRaw([...emails].join("\n"));
+      } else {
+        setRaw(await file.text());
+      }
+    } catch {
+      toast.error("Could not read that file");
+    }
   };
+
 
   const listPicker = (
     <div className="space-y-2">
@@ -762,7 +789,7 @@ function AddContactsDialog({
             <DialogHeader>
               <DialogTitle>Add contacts from file</DialogTitle>
               <DialogDescription>
-                Upload a CSV or TXT file, or paste addresses below.
+                Upload a CSV, TXT, or Excel (XLSX/XLS) file, or paste addresses below.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -770,14 +797,14 @@ function AddContactsDialog({
               <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed p-8 text-center hover:border-primary">
                 <Upload className="h-6 w-6 text-muted-foreground" />
                 <span className="text-sm font-medium">
-                  {fileName || "Click to choose a CSV / TXT file"}
+                  {fileName || "Click to choose a CSV / TXT / Excel file"}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   Emails are detected automatically
                 </span>
                 <input
                   type="file"
-                  accept=".csv,.txt,text/csv,text/plain"
+                  accept=".csv,.txt,.xlsx,.xls,.xlsm,.ods,text/csv,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                   className="hidden"
                   onChange={(e) => void readFile(e.target.files?.[0])}
                 />
