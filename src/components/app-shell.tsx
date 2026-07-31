@@ -16,7 +16,25 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import { Mail, Users, BarChart3, LogOut, User, Zap, Send } from "lucide-react";
+import {
+  Mail,
+  Users,
+  BarChart3,
+  LogOut,
+  Zap,
+  Send,
+  Bell,
+  Megaphone,
+  HelpCircle,
+  Settings,
+  Palette,
+  UsersRound,
+  AtSign,
+  Image as ImageIcon,
+  Smartphone,
+  Gift,
+  Handshake,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -72,28 +90,64 @@ export function AppShell({ children }: { children: ReactNode }) {
             Reports
           </NavLink>
 
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="relative rounded-full">
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
+                4
+              </span>
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Megaphone className="h-5 w-5 text-muted-foreground" />
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <HelpCircle className="h-5 w-5 text-muted-foreground" />
+            </Button>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
-                  <div className="grid h-8 w-8 place-items-center rounded-full bg-accent text-accent-foreground text-sm font-semibold">
+                  <div className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">
                     {user?.email?.[0]?.toUpperCase() ?? "U"}
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    <span className="truncate text-xs font-normal text-muted-foreground">
-                      {user?.email}
-                    </span>
+              <DropdownMenuContent align="end" className="w-[420px] p-0">
+                <div className="grid grid-cols-2">
+                  <div className="flex flex-col items-center justify-center gap-2 border-r p-5 text-center">
+                    <p className="text-sm font-semibold text-primary">
+                      Hello {user?.email?.split("@")[0] ?? "there"}!
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      You've got{" "}
+                      <span className="block text-xl font-bold text-primary">7 days</span>
+                      left in your free trial but you can stay with us longer!
+                    </p>
+                    <Button size="sm" className="mt-1 w-full font-semibold">
+                      Upgrade account
+                    </Button>
                   </div>
+                  <div className="p-2">
+                    <ProfileItem icon={Settings} label="Manage account" />
+                    <ProfileItem icon={Palette} label="Brand kit" />
+                    <ProfileItem icon={UsersRound} label="Team" />
+                    <ProfileItem icon={AtSign} label="Emails and domains" />
+                    <ProfileItem icon={ImageIcon} label="Files and images" />
+                    <ProfileItem icon={Smartphone} label="Mobile apps" />
+                    <ProfileItem icon={Gift} label="Refer a friend" />
+                    <ProfileItem icon={Handshake} label="Affiliate program" />
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={signOut}
+                      className="cursor-pointer font-medium text-destructive"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" /> Log out
+                    </DropdownMenuItem>
+                  </div>
+                </div>
+                <DropdownMenuLabel className="border-t px-4 py-2 text-xs font-normal text-muted-foreground">
+                  {user?.email}
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" /> Sign out
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
