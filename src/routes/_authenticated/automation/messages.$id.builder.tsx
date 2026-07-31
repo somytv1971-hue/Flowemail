@@ -139,7 +139,11 @@ function BlockPreview({ block }: { block: Block }) {
     case "image":
       return (
         <div className="flex h-32 items-center justify-center rounded bg-muted text-muted-foreground">
-          <ImageIcon className="h-6 w-6" />
+          {block.url ? (
+            <img src={block.url} alt={block.content || "Email content"} className="h-full w-full rounded object-cover" />
+          ) : (
+            <ImageIcon className="h-6 w-6" />
+          )}
         </div>
       );
     case "text":
@@ -151,9 +155,13 @@ function BlockPreview({ block }: { block: Block }) {
     case "button":
       return (
         <div className="flex justify-center">
-          <span className="rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground">
+          <a
+            href={block.url || "#preview"}
+            className="rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground"
+            onClick={(event) => event.preventDefault()}
+          >
             {block.content || "Click here"}
-          </span>
+          </a>
         </div>
       );
     case "video":
@@ -402,6 +410,7 @@ function BuilderPage() {
           }}
         >
           <div className="mx-auto" style={{ maxWidth: `${style.width}px` }}>
+            {style.customCss && <style>{style.customCss}</style>}
             <div
               className="mb-6 rounded border border-dashed py-2 text-xs tracking-widest text-muted-foreground"
               style={{
@@ -440,7 +449,7 @@ function BuilderPage() {
                 if (type) addBlock(type);
                 if (layout) addSection(layout);
               }}
-              className={`rounded-lg border-2 border-dashed bg-card p-4 transition ${
+              className={`email-content rounded-lg border-2 border-dashed bg-card p-4 transition ${
                 dragOver ? "border-primary bg-primary/5" : "border-border"
               }`}
             >
