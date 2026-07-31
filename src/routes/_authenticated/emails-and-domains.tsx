@@ -184,20 +184,6 @@ function Page() {
 
   const addEmail = (name: string, email: string) => addMutation.mutate({ name, email });
 
-
-  const removeAddress = (domainId: string, addressId: string) => {
-    setRows((prev) =>
-      prev
-        .map((r) =>
-          r.id === domainId
-            ? { ...r, addresses: r.addresses.filter((a) => a.id !== addressId) }
-            : r,
-        )
-        .filter((r) => r.addresses.length > 0),
-    );
-    toast.success("Email address removed");
-  };
-
   return (
     <div className="rounded-2xl border bg-card p-6 shadow-sm">
       <div className="flex gap-8 border-b">
