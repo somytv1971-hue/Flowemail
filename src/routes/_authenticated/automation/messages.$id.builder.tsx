@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -18,6 +18,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Plus,
   ChevronLeft,
@@ -44,6 +51,8 @@ import {
   AlignCenter,
   AlignRight,
   Info,
+  Copy,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -94,9 +103,29 @@ const BASIC_BLOCKS: Array<{ type: BlockType; label: string; icon: typeof Type; b
 
 const SECTION_LAYOUTS = ["1 column", "2 columns", "3 columns", "Left sidebar", "Right sidebar"];
 
-type Block = { key: string; type: BlockType };
+type Block = { key: string; type: BlockType; content?: string };
 
-function BlockPreview({ type }: { type: BlockType }) {
+const CONTENT_PREFIX = "FLOWMAIL_BUILDER:";
+
+function parseBlocks(value: string | null | undefined): Block[] {
+  if (!value?.startsWith(CONTENT_PREFIX)) return [];
+  try {
+    const parsed: unknown = JSON.parse(value.slice(CONTENT_PREFIX.length));
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (block): block is Block =>
+        typeof block === "object" &&
+        block !== null &&
+        typeof (block as Block).key === "string" &&
+        BASIC_BLOCKS.some((item) => item.type === (block as Block).type),
+    );
+  } catch {
+    return [];
+  }
+}
+
+function BlockPreview({ block }: { block: Block }) {
+  const { type, content } = block;
   switch (type) {
     case "image":
       return (
@@ -107,15 +136,14 @@ function BlockPreview({ type }: { type: BlockType }) {
     case "text":
       return (
         <p className="text-sm leading-relaxed text-foreground">
-          Write your message here. Click to edit this text block and tell your subscribers what
-          matters.
+          {content || "Write your message here. Select this block to edit your text."}
         </p>
       );
     case "button":
       return (
         <div className="flex justify-center">
           <span className="rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground">
-            Click here
+            {content || "Click here"}
           </span>
         </div>
       );
@@ -156,7 +184,7 @@ function BlockPreview({ type }: { type: BlockType }) {
     case "html":
       return (
         <pre className="overflow-x-auto rounded bg-muted p-3 font-mono text-xs text-muted-foreground">
-          {"<div>Custom HTML</div>"}
+          {content || "<div>Custom HTML</div>"}
         </pre>
       );
   }
@@ -174,9 +202,14 @@ function BuilderPage() {
   });
 
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [history, setHistory] = useState<Block[][]>([]);
+  const [future, setFuture] = useState<Block[][]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<"layout" | "style">("layout");
   const [dragOver, setDragOver] = useState(false);
+  const [draggedBlock, setDraggedBlock] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const hydratedMessage = useRef<string | null>(null);
   const [style, setStyle] = useState<MessageStyle>({
     width: 600,
     backgroundColor: "#FFFFFF",
@@ -185,9 +218,26 @@ function BuilderPage() {
     customCss: "",
   });
 
+  useEffect(() => {
+    if (!msg || hydratedMessage.current === id) return;
+    const saved = parseBlocks(msg.content_html);
+    setBlocks(saved);
+    hydratedMessage.current = id;
+  }, [id, msg]);
+
+  const commitBlocks = (updater: (current: Block[]) => Block[]) => {
+    setBlocks((current) => {
+      const next = updater(current);
+      if (next === current) return current;
+      setHistory((items) => [...items.slice(-29), current]);
+      setFuture([]);
+      return next;
+    });
+  };
+
   const addBlock = (type: BlockType, index?: number) => {
     const block = { key: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type };
-    setBlocks((b) => {
+    commitBlocks((b) => {
       const next = [...b];
       next.splice(index ?? next.length, 0, block);
       return next;
@@ -195,12 +245,56 @@ function BuilderPage() {
     setSelected(block.key);
   };
 
+  const addSection = (layout: string) => {
+    const count = layout === "3 columns" ? 3 : layout === "2 columns" ? 2 : 1;
+    const additions = Array.from({ length: count }, (_, index) => ({
+      key: `text-${Date.now()}-${index}`,
+      type: "text" as const,
+      content: count === 1 ? `${layout} section` : `Column ${index + 1}`,
+    }));
+    commitBlocks((current) => [...current, ...additions]);
+    setSelected(additions[0]?.key ?? null);
+    toast.success(`${layout} section added`);
+  };
+
+  const undo = () => {
+    const previous = history.at(-1);
+    if (!previous) return;
+    setFuture((items) => [blocks, ...items]);
+    setHistory((items) => items.slice(0, -1));
+    setBlocks(previous);
+    setSelected(null);
+  };
+
+  const redo = () => {
+    const next = future[0];
+    if (!next) return;
+    setHistory((items) => [...items, blocks]);
+    setFuture((items) => items.slice(1));
+    setBlocks(next);
+    setSelected(null);
+  };
+
+  const moveBlock = (sourceKey: string, targetKey: string) => {
+    if (sourceKey === targetKey) return;
+    commitBlocks((current) => {
+      const sourceIndex = current.findIndex((item) => item.key === sourceKey);
+      const targetIndex = current.findIndex((item) => item.key === targetKey);
+      if (sourceIndex < 0 || targetIndex < 0) return current;
+      const next = [...current];
+      const [moved] = next.splice(sourceIndex, 1);
+      if (!moved) return current;
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
+  };
+
   const save = useMutation({
     mutationFn: () =>
       update({
         data: {
           id,
-          content_html: blocks.map((b) => `<!-- block:${b.type} -->`).join("\n"),
+          content_html: `${CONTENT_PREFIX}${JSON.stringify(blocks)}`,
         },
       }),
     onSuccess: () => toast.success("Saved"),
@@ -218,20 +312,28 @@ function BuilderPage() {
         >
           <ChevronLeft className="h-4 w-4" /> Back to design and content
         </button>
-        <div className="ml-2 flex items-center gap-2 text-muted-foreground">
-          <Undo2 className="h-4 w-4" />
-          <Redo2 className="h-4 w-4" />
+        <div className="ml-2 flex items-center gap-1 text-muted-foreground">
+          <Button type="button" variant="ghost" size="icon" onClick={undo} disabled={!history.length} title="Undo">
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button type="button" variant="ghost" size="icon" onClick={redo} disabled={!future.length} title="Redo">
+            <Redo2 className="h-4 w-4" />
+          </Button>
           <span className="ml-2 inline-flex items-center gap-1 text-xs">
             <Save className="h-3.5 w-3.5" /> {save.isPending ? "Saving…" : "Saved"}
           </span>
         </div>
         <div className="ml-auto flex items-center gap-4">
-          <button type="button" className="text-sm font-medium text-primary hover:underline">
+          <button type="button" onClick={() => setPreviewOpen(true)} className="text-sm font-medium text-primary hover:underline">
             Test and preview
           </button>
           <button
             type="button"
-            onClick={() => save.mutate()}
+            onClick={() =>
+              save.mutate(undefined, {
+                onSuccess: () => navigate({ to: "/automation/messages/$id", params: { id } }),
+              })
+            }
             className="text-sm font-medium text-primary hover:underline"
           >
             Save and exit
@@ -252,8 +354,8 @@ function BuilderPage() {
 
       <div className="flex min-h-0 flex-1">
         {/* Canvas */}
-        <div className="min-w-0 flex-1 overflow-y-auto bg-muted/40 p-8">
-          <div className="mx-auto max-w-xl">
+        <div className="min-w-0 flex-1 overflow-y-auto bg-muted/40 p-8" style={{ backgroundColor: style.backgroundColor }}>
+          <div className="mx-auto" style={{ maxWidth: `${style.width}px` }}>
             <div className="mx-auto mb-6 w-32 rounded border border-dashed bg-card py-2 text-center text-xs tracking-widest text-muted-foreground">
               LOGO
             </div>
@@ -267,8 +369,8 @@ function BuilderPage() {
               onDrop={(e) => {
                 e.preventDefault();
                 setDragOver(false);
-                const type = e.dataTransfer.getData("text/block") as BlockType;
-                if (type) addBlock(type);
+                  const type = e.dataTransfer.getData("text/block") as BlockType;
+                  if (type && BASIC_BLOCKS.some((item) => item.type === type)) addBlock(type);
               }}
               className={`rounded-lg border-2 border-dashed bg-card p-4 transition ${
                 dragOver ? "border-primary bg-primary/5" : "border-border"
@@ -284,6 +386,19 @@ function BuilderPage() {
                   {blocks.map((b) => (
                     <div
                       key={b.key}
+                      draggable
+                      onDragStart={(event) => {
+                        setDraggedBlock(b.key);
+                        event.dataTransfer.setData("text/existing-block", b.key);
+                      }}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        const source = event.dataTransfer.getData("text/existing-block") || draggedBlock;
+                        if (source) moveBlock(source, b.key);
+                        setDraggedBlock(null);
+                      }}
                       onClick={() => setSelected(b.key)}
                       className={`group relative rounded border p-4 transition ${
                         selected === b.key
@@ -291,14 +406,15 @@ function BuilderPage() {
                           : "border-transparent hover:border-border"
                       }`}
                     >
-                      <BlockPreview type={b.type} />
+                      <BlockPreview block={b} />
                       <div className="absolute right-2 top-2 hidden items-center gap-1 group-hover:flex">
                         <GripVertical className="h-4 w-4 text-muted-foreground" />
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setBlocks((s) => s.filter((x) => x.key !== b.key));
+                            commitBlocks((s) => s.filter((x) => x.key !== b.key));
+                            if (selected === b.key) setSelected(null);
                           }}
                           className="text-muted-foreground hover:text-destructive"
                         >
@@ -348,12 +464,16 @@ function BuilderPage() {
                 <AccordionContent className="px-3">
                   <div className="grid grid-cols-2 gap-2">
                     {SECTION_LAYOUTS.map((s) => (
-                      <div
+                      <button
                         key={s}
+                        type="button"
+                        draggable
+                        onDragStart={(event) => event.dataTransfer.setData("text/section", s)}
+                        onClick={() => addSection(s)}
                         className="rounded-lg border p-3 text-center text-xs text-muted-foreground hover:border-primary hover:text-foreground"
                       >
                         {s}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </AccordionContent>
@@ -407,8 +527,60 @@ function BuilderPage() {
           ) : (
             <MessageStylePanel style={style} setStyle={setStyle} />
           )}
+
+          {selected && (
+            <div className="border-t p-4">
+              <div className="mb-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                <Label htmlFor="block-content">Selected block</Label>
+                <Button variant="ghost" size="icon" onClick={() => setSelected(null)} title="Close block editor">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <Textarea
+                id="block-content"
+                rows={4}
+                value={blocks.find((item) => item.key === selected)?.content ?? ""}
+                placeholder="Edit block content"
+                onChange={(event) =>
+                  commitBlocks((current) =>
+                    current.map((item) =>
+                      item.key === selected ? { ...item, content: event.target.value } : item,
+                    ),
+                  )
+                }
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => {
+                  const source = blocks.find((item) => item.key === selected);
+                  if (!source) return;
+                  const copy = { ...source, key: `${source.type}-${Date.now()}` };
+                  commitBlocks((current) => [...current, copy]);
+                  setSelected(copy.key);
+                }}
+              >
+                <Copy className="h-4 w-4" /> Duplicate
+              </Button>
+            </div>
+          )}
         </aside>
       </div>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Message preview</DialogTitle>
+            <DialogDescription>This is how your current message content will appear.</DialogDescription>
+          </DialogHeader>
+          <div className="mx-auto w-full rounded border bg-card p-5" style={{ maxWidth: `${style.width}px` }}>
+            <div className="space-y-2">
+              {blocks.length ? blocks.map((block) => <BlockPreview key={block.key} block={block} />) : <p className="py-12 text-center text-sm text-muted-foreground">Your message is empty.</p>}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
