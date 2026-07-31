@@ -37,6 +37,13 @@ import {
   Lightbulb,
   Trash2,
   GripVertical,
+  Monitor,
+  Smartphone,
+  Mail,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -550,17 +557,18 @@ function MessageStylePanel({
             NEW
           </span>
         </AccordionTrigger>
-        <AccordionContent className="px-3 pb-4 text-xs text-muted-foreground">
-          Pick a theme to apply consistent colors and fonts across the whole message.
+        <AccordionContent className="px-3 pb-5">
+          <ThemePanel />
         </AccordionContent>
       </AccordionItem>
 
       <AccordionItem value="header">
         <AccordionTrigger className="px-3 text-sm">Header</AccordionTrigger>
-        <AccordionContent className="px-3 pb-4 text-xs text-muted-foreground">
-          Configure the header area shown above your message content.
+        <AccordionContent className="px-3 pb-5">
+          <HeaderPanel />
         </AccordionContent>
       </AccordionItem>
+
 
       <AccordionItem value="footer">
         <AccordionTrigger className="px-3 text-sm">Footer</AccordionTrigger>
