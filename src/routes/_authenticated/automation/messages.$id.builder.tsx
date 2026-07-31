@@ -2,10 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  getAutomationMessage,
-  updateAutomationMessage,
-} from "@/lib/automation-messages.functions";
+import { getAutomationMessage, updateAutomationMessage } from "@/lib/automation-messages.functions";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -313,10 +310,24 @@ function BuilderPage() {
           <ChevronLeft className="h-4 w-4" /> Back to design and content
         </button>
         <div className="ml-2 flex items-center gap-1 text-muted-foreground">
-          <Button type="button" variant="ghost" size="icon" onClick={undo} disabled={!history.length} title="Undo">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={undo}
+            disabled={!history.length}
+            title="Undo"
+          >
             <Undo2 className="h-4 w-4" />
           </Button>
-          <Button type="button" variant="ghost" size="icon" onClick={redo} disabled={!future.length} title="Redo">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={redo}
+            disabled={!future.length}
+            title="Redo"
+          >
             <Redo2 className="h-4 w-4" />
           </Button>
           <span className="ml-2 inline-flex items-center gap-1 text-xs">
@@ -324,7 +335,11 @@ function BuilderPage() {
           </span>
         </div>
         <div className="ml-auto flex items-center gap-4">
-          <button type="button" onClick={() => setPreviewOpen(true)} className="text-sm font-medium text-primary hover:underline">
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="text-sm font-medium text-primary hover:underline"
+          >
             Test and preview
           </button>
           <button
@@ -342,8 +357,7 @@ function BuilderPage() {
             className="rounded-full px-6"
             onClick={() =>
               save.mutate(undefined, {
-                onSuccess: () =>
-                  navigate({ to: "/automation/messages/$id", params: { id } }),
+                onSuccess: () => navigate({ to: "/automation/messages/$id", params: { id } }),
               })
             }
           >
@@ -354,7 +368,10 @@ function BuilderPage() {
 
       <div className="flex min-h-0 flex-1">
         {/* Canvas */}
-        <div className="min-w-0 flex-1 overflow-y-auto bg-muted/40 p-8" style={{ backgroundColor: style.backgroundColor }}>
+        <div
+          className="min-w-0 flex-1 overflow-y-auto bg-muted/40 p-8"
+          style={{ backgroundColor: style.backgroundColor }}
+        >
           <div className="mx-auto" style={{ maxWidth: `${style.width}px` }}>
             <div className="mx-auto mb-6 w-32 rounded border border-dashed bg-card py-2 text-center text-xs tracking-widest text-muted-foreground">
               LOGO
@@ -369,10 +386,10 @@ function BuilderPage() {
               onDrop={(e) => {
                 e.preventDefault();
                 setDragOver(false);
-                  const type = e.dataTransfer.getData("text/block") as BlockType;
-                  if (type && BASIC_BLOCKS.some((item) => item.type === type)) addBlock(type);
-                  const section = e.dataTransfer.getData("text/section");
-                  if (section && SECTION_LAYOUTS.includes(section)) addSection(section);
+                const type = e.dataTransfer.getData("text/block") as BlockType;
+                if (type && BASIC_BLOCKS.some((item) => item.type === type)) addBlock(type);
+                const section = e.dataTransfer.getData("text/section");
+                if (section && SECTION_LAYOUTS.includes(section)) addSection(section);
               }}
               className={`rounded-lg border-2 border-dashed bg-card p-4 transition ${
                 dragOver ? "border-primary bg-primary/5" : "border-border"
@@ -397,7 +414,8 @@ function BuilderPage() {
                       onDrop={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
-                        const source = event.dataTransfer.getData("text/existing-block") || draggedBlock;
+                        const source =
+                          event.dataTransfer.getData("text/existing-block") || draggedBlock;
                         if (source) moveBlock(source, b.key);
                         setDraggedBlock(null);
                       }}
@@ -432,8 +450,7 @@ function BuilderPage() {
             <footer className="mt-6 space-y-1 text-center text-[11px] text-muted-foreground">
               <p>{msg?.list_name || "Your company"}, 1700, Business street, City, Country</p>
               <p>
-                You can{" "}
-                <span className="text-primary underline">unsubscribe</span> or{" "}
+                You can <span className="text-primary underline">unsubscribe</span> or{" "}
                 <span className="text-primary underline">change your details</span> at any time.
               </p>
             </footer>
@@ -534,7 +551,12 @@ function BuilderPage() {
             <div className="border-t p-4">
               <div className="mb-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                 <Label htmlFor="block-content">Selected block</Label>
-                <Button variant="ghost" size="icon" onClick={() => setSelected(null)} title="Close block editor">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelected(null)}
+                  title="Close block editor"
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -574,11 +596,22 @@ function BuilderPage() {
         <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Message preview</DialogTitle>
-            <DialogDescription>This is how your current message content will appear.</DialogDescription>
+            <DialogDescription>
+              This is how your current message content will appear.
+            </DialogDescription>
           </DialogHeader>
-          <div className="mx-auto w-full rounded border bg-card p-5" style={{ maxWidth: `${style.width}px` }}>
+          <div
+            className="mx-auto w-full rounded border bg-card p-5"
+            style={{ maxWidth: `${style.width}px` }}
+          >
             <div className="space-y-2">
-              {blocks.length ? blocks.map((block) => <BlockPreview key={block.key} block={block} />) : <p className="py-12 text-center text-sm text-muted-foreground">Your message is empty.</p>}
+              {blocks.length ? (
+                blocks.map((block) => <BlockPreview key={block.key} block={block} />)
+              ) : (
+                <p className="py-12 text-center text-sm text-muted-foreground">
+                  Your message is empty.
+                </p>
+              )}
             </div>
           </div>
         </DialogContent>
@@ -742,7 +775,6 @@ function MessageStylePanel({
           <HeaderPanel />
         </AccordionContent>
       </AccordionItem>
-
 
       <AccordionItem value="footer">
         <AccordionTrigger className="px-3 text-sm">Footer</AccordionTrigger>
@@ -1092,9 +1124,7 @@ function FooterPanel() {
             You cannot remove or hide the unsubscribe link or any other footer element required by
             consumer privacy and anti-spam laws.
           </p>
-          <p>
-            The physical address displayed in the footer is taken from the linked list.
-          </p>
+          <p>The physical address displayed in the footer is taken from the linked list.</p>
           <button type="button" className="font-medium text-primary hover:underline">
             Learn more about footer requirements
           </button>
@@ -1123,10 +1153,7 @@ function FooterPanel() {
             ))}
           </select>
           <label className="flex h-9 cursor-pointer items-center gap-2 rounded-md border px-2">
-            <span
-              className="h-5 w-5 rounded-sm border"
-              style={{ backgroundColor: f.textColor }}
-            />
+            <span className="h-5 w-5 rounded-sm border" style={{ backgroundColor: f.textColor }} />
             <span className="text-xs">{f.textColor.toUpperCase()}</span>
             <input
               type="color"
@@ -1149,7 +1176,9 @@ function FooterPanel() {
               type="button"
               onClick={() => set(b.key, !f[b.key])}
               className={`w-10 py-1.5 text-sm ${b.cls} ${
-                f[b.key] ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                f[b.key]
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
               }`}
             >
               {b.label}
@@ -1321,7 +1350,9 @@ function ThemePanel() {
                 <input
                   value={c.value}
                   onChange={(e) =>
-                    setColors((s) => s.map((x, xi) => (xi === i ? { ...x, value: e.target.value } : x)))
+                    setColors((s) =>
+                      s.map((x, xi) => (xi === i ? { ...x, value: e.target.value } : x)),
+                    )
                   }
                   className="w-20 bg-transparent text-xs outline-none"
                 />
@@ -1364,7 +1395,11 @@ function ThemePanel() {
         <Button variant="ghost" size="sm" onClick={() => setCreating(false)}>
           Cancel
         </Button>
-        <Button size="sm" className="rounded-full px-5" onClick={() => toast.success("Brand kit saved")}>
+        <Button
+          size="sm"
+          className="rounded-full px-5"
+          onClick={() => toast.success("Brand kit saved")}
+        >
           Save
         </Button>
       </div>
