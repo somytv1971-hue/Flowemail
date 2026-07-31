@@ -236,8 +236,9 @@ function Page() {
             </div>
 
 
-            {!showAllContacts ? (
+            {(
               <div className="mt-4 overflow-hidden rounded-xl border">
+
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50 text-muted-foreground">
                     <tr>
