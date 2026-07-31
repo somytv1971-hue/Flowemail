@@ -1,11 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  getAutomationMessage,
-  updateAutomationMessage,
-} from "@/lib/automation-messages.functions";
+import { getAutomationMessage, updateAutomationMessage } from "@/lib/automation-messages.functions";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -18,6 +15,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Plus,
   ChevronLeft,
@@ -94,29 +98,74 @@ const BASIC_BLOCKS: Array<{ type: BlockType; label: string; icon: typeof Type; b
 
 const SECTION_LAYOUTS = ["1 column", "2 columns", "3 columns", "Left sidebar", "Right sidebar"];
 
-type Block = { key: string; type: BlockType };
+type SectionLayout = (typeof SECTION_LAYOUTS)[number];
+type Block = {
+  key: string;
+  type: BlockType;
+  content?: string;
+  url?: string;
+  layout?: SectionLayout;
+};
 
-function BlockPreview({ type }: { type: BlockType }) {
+type BuilderDocument = {
+  version: 1;
+  blocks: Block[];
+  style: MessageStyle;
+  header?: HeaderSettings;
+  footer?: FooterSettings;
+};
+
+const DEFAULT_STYLE: MessageStyle = {
+  width: 600,
+  backgroundColor: "#FFFFFF",
+  backgroundImageOn: false,
+  imageUrl: "",
+  customCss: "",
+};
+
+function parseDocument(value: string | null | undefined): BuilderDocument | null {
+  if (!value?.startsWith("FLOWMAIL_BUILDER:")) return null;
+  try {
+    const parsed = JSON.parse(value.slice("FLOWMAIL_BUILDER:".length)) as BuilderDocument;
+    return parsed.version === 1 && Array.isArray(parsed.blocks) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function BlockPreview({ block }: { block: Block }) {
+  const { type } = block;
   switch (type) {
     case "image":
       return (
         <div className="flex h-32 items-center justify-center rounded bg-muted text-muted-foreground">
-          <ImageIcon className="h-6 w-6" />
+          {block.url ? (
+            <img
+              src={block.url}
+              alt={block.content || "Email content"}
+              className="h-full w-full rounded object-cover"
+            />
+          ) : (
+            <ImageIcon className="h-6 w-6" />
+          )}
         </div>
       );
     case "text":
       return (
         <p className="text-sm leading-relaxed text-foreground">
-          Write your message here. Click to edit this text block and tell your subscribers what
-          matters.
+          {block.content || "Write your message here. Click to edit this text block."}
         </p>
       );
     case "button":
       return (
         <div className="flex justify-center">
-          <span className="rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground">
-            Click here
-          </span>
+          <a
+            href={block.url || "#preview"}
+            className="rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground"
+            onClick={(event) => event.preventDefault()}
+          >
+            {block.content || "Click here"}
+          </a>
         </div>
       );
     case "video":
@@ -156,7 +205,7 @@ function BlockPreview({ type }: { type: BlockType }) {
     case "html":
       return (
         <pre className="overflow-x-auto rounded bg-muted p-3 font-mono text-xs text-muted-foreground">
-          {"<div>Custom HTML</div>"}
+          {block.content || "<div>Custom HTML</div>"}
         </pre>
       );
   }
@@ -177,17 +226,66 @@ function BuilderPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<"layout" | "style">("layout");
   const [dragOver, setDragOver] = useState(false);
-  const [style, setStyle] = useState<MessageStyle>({
-    width: 600,
-    backgroundColor: "#FFFFFF",
-    backgroundImageOn: true,
+  const [style, setStyle] = useState<MessageStyle>(DEFAULT_STYLE);
+  const [header, setHeader] = useState<HeaderSettings>({
+    showViewOnline: false,
+    mode: "logo",
     imageUrl: "",
-    customCss: "",
+    altText: "Logo",
+    alignment: "center",
+    width: 120,
+    height: 40,
+    padChangeIndividually: false,
+    padAll: 5,
+    backgroundColor: "#FFFFFF",
+    transparent: true,
+    visibility: "all",
   });
+  const [footer, setFooter] = useState<FooterSettings>({
+    fontFamily: "Arial",
+    fontSize: "12",
+    textColor: "#000000",
+    bold: false,
+    italic: false,
+    underline: false,
+    alignment: "center",
+    linksColor: "#00BAFF",
+    backgroundColor: "#FFFFFF",
+    transparent: true,
+    padChangeIndividually: false,
+    padAll: 10,
+  });
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [history, setHistory] = useState<Block[][]>([]);
+  const [future, setFuture] = useState<Block[][]>([]);
+  const [ready, setReady] = useState(false);
+  const draggedKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!msg || ready) return;
+    const document = parseDocument(msg.content_html);
+    if (document) {
+      setBlocks(document.blocks);
+      setStyle({ ...DEFAULT_STYLE, ...document.style });
+      if (document.header) setHeader(document.header);
+      if (document.footer) setFooter(document.footer);
+    }
+    setReady(true);
+  }, [msg, ready]);
+
+  const commitBlocks = (updater: (current: Block[]) => Block[]) => {
+    setBlocks((current) => {
+      const next = updater(current);
+      if (next === current) return current;
+      setHistory((items) => [...items.slice(-29), current]);
+      setFuture([]);
+      return next;
+    });
+  };
 
   const addBlock = (type: BlockType, index?: number) => {
     const block = { key: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type };
-    setBlocks((b) => {
+    commitBlocks((b) => {
       const next = [...b];
       next.splice(index ?? next.length, 0, block);
       return next;
@@ -195,16 +293,54 @@ function BuilderPage() {
     setSelected(block.key);
   };
 
+  const addSection = (layout: SectionLayout) => {
+    const columns = layout === "3 columns" ? 3 : layout === "1 column" ? 1 : 2;
+    const additions: Block[] = Array.from({ length: columns }, (_, index) => ({
+      key: `text-${Date.now()}-${index}`,
+      type: "text",
+      content: `${layout} — column ${index + 1}`,
+      layout,
+    }));
+    commitBlocks((current) => [...current, ...additions]);
+    setSelected(additions[0]?.key ?? null);
+  };
+
+  const updateSelected = (patch: Partial<Block>) => {
+    if (!selected) return;
+    commitBlocks((current) =>
+      current.map((block) => (block.key === selected ? { ...block, ...patch } : block)),
+    );
+  };
+
+  const undo = () => {
+    const previous = history.at(-1);
+    if (!previous) return;
+    setFuture((items) => [blocks, ...items].slice(0, 30));
+    setHistory((items) => items.slice(0, -1));
+    setBlocks(previous);
+  };
+
+  const redo = () => {
+    const next = future[0];
+    if (!next) return;
+    setHistory((items) => [...items, blocks].slice(-30));
+    setFuture((items) => items.slice(1));
+    setBlocks(next);
+  };
+
+  const documentValue = () =>
+    `FLOWMAIL_BUILDER:${JSON.stringify({ version: 1, blocks, style, header, footer } satisfies BuilderDocument)}`;
+
   const save = useMutation({
     mutationFn: () =>
       update({
         data: {
           id,
-          content_html: blocks.map((b) => `<!-- block:${b.type} -->`).join("\n"),
+          content_html: documentValue(),
         },
       }),
     onSuccess: () => toast.success("Saved"),
-    onError: (e: any) => toast.error(e.message ?? "Could not save"),
+    onError: (error: Error) => toast.error(error.message || "Could not save"),
   });
 
   return (
@@ -219,19 +355,37 @@ function BuilderPage() {
           <ChevronLeft className="h-4 w-4" /> Back to design and content
         </button>
         <div className="ml-2 flex items-center gap-2 text-muted-foreground">
-          <Undo2 className="h-4 w-4" />
-          <Redo2 className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={undo}
+            disabled={!history.length}
+            title="Undo"
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={redo} disabled={!future.length} title="Redo">
+            <Redo2 className="h-4 w-4" />
+          </Button>
           <span className="ml-2 inline-flex items-center gap-1 text-xs">
             <Save className="h-3.5 w-3.5" /> {save.isPending ? "Saving…" : "Saved"}
           </span>
         </div>
         <div className="ml-auto flex items-center gap-4">
-          <button type="button" className="text-sm font-medium text-primary hover:underline">
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="text-sm font-medium text-primary hover:underline"
+          >
             Test and preview
           </button>
           <button
             type="button"
-            onClick={() => save.mutate()}
+            onClick={() =>
+              save.mutate(undefined, {
+                onSuccess: () => navigate({ to: "/automation/messages/$id", params: { id } }),
+              })
+            }
             className="text-sm font-medium text-primary hover:underline"
           >
             Save and exit
@@ -240,8 +394,7 @@ function BuilderPage() {
             className="rounded-full px-6"
             onClick={() =>
               save.mutate(undefined, {
-                onSuccess: () =>
-                  navigate({ to: "/automation/messages/$id", params: { id } }),
+                onSuccess: () => navigate({ to: "/automation/messages/$id", params: { id } }),
               })
             }
           >
@@ -252,10 +405,38 @@ function BuilderPage() {
 
       <div className="flex min-h-0 flex-1">
         {/* Canvas */}
-        <div className="min-w-0 flex-1 overflow-y-auto bg-muted/40 p-8">
-          <div className="mx-auto max-w-xl">
-            <div className="mx-auto mb-6 w-32 rounded border border-dashed bg-card py-2 text-center text-xs tracking-widest text-muted-foreground">
-              LOGO
+        <div
+          className="min-w-0 flex-1 overflow-y-auto bg-muted/40 p-8"
+          style={{
+            backgroundColor: style.backgroundColor,
+            backgroundImage:
+              style.backgroundImageOn && style.imageUrl ? `url(${style.imageUrl})` : undefined,
+          }}
+        >
+          <div className="mx-auto" style={{ maxWidth: `${style.width}px` }}>
+            {style.customCss && <style>{style.customCss}</style>}
+            <div
+              className="mb-6 rounded border border-dashed py-2 text-xs tracking-widest text-muted-foreground"
+              style={{
+                padding: `${header.padAll}px`,
+                backgroundColor: header.transparent ? "transparent" : header.backgroundColor,
+                textAlign: header.alignment,
+              }}
+            >
+              {header.mode === "online" ? (
+                <a href="#preview" className="text-primary underline">
+                  View this message online
+                </a>
+              ) : header.imageUrl ? (
+                <img
+                  src={header.imageUrl}
+                  alt={header.altText}
+                  className="inline-block object-contain"
+                  style={{ width: `${header.width}px`, height: `${header.height}px` }}
+                />
+              ) : (
+                "LOGO"
+              )}
             </div>
 
             <div
@@ -268,9 +449,11 @@ function BuilderPage() {
                 e.preventDefault();
                 setDragOver(false);
                 const type = e.dataTransfer.getData("text/block") as BlockType;
+                const layout = e.dataTransfer.getData("text/section") as SectionLayout;
                 if (type) addBlock(type);
+                if (layout) addSection(layout);
               }}
-              className={`rounded-lg border-2 border-dashed bg-card p-4 transition ${
+              className={`email-content rounded-lg border-2 border-dashed bg-card p-4 transition ${
                 dragOver ? "border-primary bg-primary/5" : "border-border"
               }`}
             >
@@ -281,9 +464,31 @@ function BuilderPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {blocks.map((b) => (
+                  {blocks.map((b, index) => (
                     <div
                       key={b.key}
+                      draggable
+                      onDragStart={(event) => {
+                        draggedKey.current = b.key;
+                        event.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        const fromKey = draggedKey.current;
+                        if (!fromKey || fromKey === b.key) return;
+                        commitBlocks((current) => {
+                          const from = current.findIndex((item) => item.key === fromKey);
+                          if (from < 0) return current;
+                          const next = [...current];
+                          const [moved] = next.splice(from, 1);
+                          if (!moved) return current;
+                          next.splice(index, 0, moved);
+                          return next;
+                        });
+                        draggedKey.current = null;
+                      }}
                       onClick={() => setSelected(b.key)}
                       className={`group relative rounded border p-4 transition ${
                         selected === b.key
@@ -291,14 +496,15 @@ function BuilderPage() {
                           : "border-transparent hover:border-border"
                       }`}
                     >
-                      <BlockPreview type={b.type} />
+                      <BlockPreview block={b} />
                       <div className="absolute right-2 top-2 hidden items-center gap-1 group-hover:flex">
                         <GripVertical className="h-4 w-4 text-muted-foreground" />
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setBlocks((s) => s.filter((x) => x.key !== b.key));
+                            commitBlocks((s) => s.filter((x) => x.key !== b.key));
+                            if (selected === b.key) setSelected(null);
                           }}
                           className="text-muted-foreground hover:text-destructive"
                         >
@@ -311,12 +517,31 @@ function BuilderPage() {
               )}
             </div>
 
-            <footer className="mt-6 space-y-1 text-center text-[11px] text-muted-foreground">
+            <footer
+              className="mt-6 space-y-1 text-muted-foreground"
+              style={{
+                fontFamily: footer.fontFamily,
+                fontSize: `${footer.fontSize}px`,
+                color: footer.textColor,
+                fontWeight: footer.bold ? 700 : 400,
+                fontStyle: footer.italic ? "italic" : "normal",
+                textDecoration: footer.underline ? "underline" : "none",
+                textAlign: footer.alignment,
+                backgroundColor: footer.transparent ? "transparent" : footer.backgroundColor,
+                padding: `${footer.padAll}px`,
+              }}
+            >
               <p>{msg?.list_name || "Your company"}, 1700, Business street, City, Country</p>
               <p>
                 You can{" "}
-                <span className="text-primary underline">unsubscribe</span> or{" "}
-                <span className="text-primary underline">change your details</span> at any time.
+                <span className="underline" style={{ color: footer.linksColor }}>
+                  unsubscribe
+                </span>{" "}
+                or{" "}
+                <span className="underline" style={{ color: footer.linksColor }}>
+                  change your details
+                </span>{" "}
+                at any time.
               </p>
             </footer>
           </div>
@@ -348,16 +573,44 @@ function BuilderPage() {
                 <AccordionContent className="px-3">
                   <div className="grid grid-cols-2 gap-2">
                     {SECTION_LAYOUTS.map((s) => (
-                      <div
+                      <button
+                        type="button"
+                        draggable
+                        onDragStart={(e) => e.dataTransfer.setData("text/section", s)}
+                        onClick={() => addSection(s)}
                         key={s}
                         className="rounded-lg border p-3 text-center text-xs text-muted-foreground hover:border-primary hover:text-foreground"
                       >
                         {s}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </AccordionContent>
               </AccordionItem>
+
+              {selected && (
+                <AccordionItem value="selected">
+                  <AccordionTrigger className="px-3 text-sm">Selected block</AccordionTrigger>
+                  <AccordionContent className="space-y-3 px-3">
+                    <Label htmlFor="block-content">Content</Label>
+                    <Textarea
+                      id="block-content"
+                      value={blocks.find((block) => block.key === selected)?.content ?? ""}
+                      onChange={(event) => updateSelected({ content: event.target.value })}
+                      placeholder="Edit block content"
+                    />
+                    {(["image", "video", "button"] as BlockType[]).includes(
+                      blocks.find((block) => block.key === selected)?.type ?? "text",
+                    ) && (
+                      <Input
+                        value={blocks.find((block) => block.key === selected)?.url ?? ""}
+                        onChange={(event) => updateSelected({ url: event.target.value })}
+                        placeholder="Destination or media URL"
+                      />
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              )}
 
               <AccordionItem value="basic">
                 <AccordionTrigger className="px-3 text-sm">
@@ -405,10 +658,37 @@ function BuilderPage() {
               ))}
             </Accordion>
           ) : (
-            <MessageStylePanel style={style} setStyle={setStyle} />
+            <MessageStylePanel
+              style={style}
+              setStyle={setStyle}
+              header={header}
+              setHeader={setHeader}
+              footer={footer}
+              setFooter={setFooter}
+            />
           )}
         </aside>
       </div>
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Message preview</DialogTitle>
+            <DialogDescription>Desktop preview of the saved email content.</DialogDescription>
+          </DialogHeader>
+          <div
+            className="mx-auto w-full rounded border bg-card p-6"
+            style={{ maxWidth: `${style.width}px` }}
+          >
+            <div className="space-y-3">
+              {blocks.length ? (
+                blocks.map((block) => <BlockPreview key={block.key} block={block} />)
+              ) : (
+                <p className="text-center text-sm text-muted-foreground">Your message is empty.</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -424,9 +704,17 @@ type MessageStyle = {
 function MessageStylePanel({
   style,
   setStyle,
+  header,
+  setHeader,
+  footer,
+  setFooter,
 }: {
   style: MessageStyle;
   setStyle: React.Dispatch<React.SetStateAction<MessageStyle>>;
+  header: HeaderSettings;
+  setHeader: React.Dispatch<React.SetStateAction<HeaderSettings>>;
+  footer: FooterSettings;
+  setFooter: React.Dispatch<React.SetStateAction<FooterSettings>>;
 }) {
   const set = <K extends keyof MessageStyle>(k: K, v: MessageStyle[K]) =>
     setStyle((s) => ({ ...s, [k]: v }));
@@ -514,9 +802,22 @@ function MessageStylePanel({
                   <p className="mt-1">Size:</p>
                 </div>
               </div>
-              <button type="button" className="text-sm font-medium text-primary hover:underline">
+              <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
                 Add image
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () =>
+                      typeof reader.result === "string" && set("imageUrl", reader.result);
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </label>
 
               <div>
                 <Label className="text-sm">Embed from a URL</Label>
@@ -527,7 +828,16 @@ function MessageStylePanel({
                     placeholder="Enter image URL"
                     className="rounded-r-none"
                   />
-                  <Button variant="outline" className="rounded-l-none border-l-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-l-none border-l-0"
+                    onClick={() =>
+                      style.imageUrl
+                        ? toast.success("Background image applied")
+                        : toast.error("Enter an image URL")
+                    }
+                  >
                     Go
                   </Button>
                 </div>
@@ -558,22 +868,21 @@ function MessageStylePanel({
           </span>
         </AccordionTrigger>
         <AccordionContent className="px-3 pb-5">
-          <ThemePanel />
+          <ThemePanel onApply={(backgroundColor) => set("backgroundColor", backgroundColor)} />
         </AccordionContent>
       </AccordionItem>
 
       <AccordionItem value="header">
         <AccordionTrigger className="px-3 text-sm">Header</AccordionTrigger>
         <AccordionContent className="px-3 pb-5">
-          <HeaderPanel />
+          <HeaderPanel value={header} onChange={setHeader} />
         </AccordionContent>
       </AccordionItem>
-
 
       <AccordionItem value="footer">
         <AccordionTrigger className="px-3 text-sm">Footer</AccordionTrigger>
         <AccordionContent className="px-3 pb-5">
-          <FooterPanel />
+          <FooterPanel value={footer} onChange={setFooter} />
         </AccordionContent>
       </AccordionItem>
 
@@ -644,21 +953,13 @@ function Stepper({
   );
 }
 
-function HeaderPanel() {
-  const [h, setH] = useState<HeaderSettings>({
-    showViewOnline: false,
-    mode: "logo",
-    imageUrl: "",
-    altText: "",
-    alignment: "center",
-    width: 120,
-    height: 40,
-    padChangeIndividually: false,
-    padAll: 5,
-    backgroundColor: "#FFFFFF",
-    transparent: true,
-    visibility: "all",
-  });
+function HeaderPanel({
+  value: h,
+  onChange: setH,
+}: {
+  value: HeaderSettings;
+  onChange: React.Dispatch<React.SetStateAction<HeaderSettings>>;
+}) {
   const set = <K extends keyof HeaderSettings>(k: K, v: HeaderSettings[K]) =>
     setH((s) => ({ ...s, [k]: v }));
 
@@ -713,9 +1014,22 @@ function HeaderPanel() {
               <p className="mt-1">Size:</p>
             </div>
           </div>
-          <button type="button" className="text-sm font-medium text-primary hover:underline">
+          <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
             Add image
-          </button>
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () =>
+                  typeof reader.result === "string" && set("imageUrl", reader.result);
+                reader.readAsDataURL(file);
+              }}
+            />
+          </label>
 
           <div>
             <Label className="text-sm">Embed from a URL</Label>
@@ -726,7 +1040,14 @@ function HeaderPanel() {
                 placeholder="Enter image URL"
                 className="rounded-r-none"
               />
-              <Button variant="outline" className="rounded-l-none border-l-0">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-l-none border-l-0"
+                onClick={() =>
+                  h.imageUrl ? toast.success("Logo updated") : toast.error("Enter an image URL")
+                }
+              >
                 Go
               </Button>
             </div>
@@ -885,21 +1206,13 @@ const FOOTER_FONTS = [
 ];
 const FOOTER_SIZES = ["10", "11", "12", "14", "16", "18", "20"];
 
-function FooterPanel() {
-  const [f, setF] = useState<FooterSettings>({
-    fontFamily: "Arial",
-    fontSize: "12",
-    textColor: "#000000",
-    bold: false,
-    italic: false,
-    underline: false,
-    alignment: "center",
-    linksColor: "#00BAFF",
-    backgroundColor: "#FFFFFF",
-    transparent: true,
-    padChangeIndividually: false,
-    padAll: 10,
-  });
+function FooterPanel({
+  value: f,
+  onChange: setF,
+}: {
+  value: FooterSettings;
+  onChange: React.Dispatch<React.SetStateAction<FooterSettings>>;
+}) {
   const set = <K extends keyof FooterSettings>(k: K, v: FooterSettings[K]) =>
     setF((s) => ({ ...s, [k]: v }));
 
@@ -918,9 +1231,7 @@ function FooterPanel() {
             You cannot remove or hide the unsubscribe link or any other footer element required by
             consumer privacy and anti-spam laws.
           </p>
-          <p>
-            The physical address displayed in the footer is taken from the linked list.
-          </p>
+          <p>The physical address displayed in the footer is taken from the linked list.</p>
           <button type="button" className="font-medium text-primary hover:underline">
             Learn more about footer requirements
           </button>
@@ -949,10 +1260,7 @@ function FooterPanel() {
             ))}
           </select>
           <label className="flex h-9 cursor-pointer items-center gap-2 rounded-md border px-2">
-            <span
-              className="h-5 w-5 rounded-sm border"
-              style={{ backgroundColor: f.textColor }}
-            />
+            <span className="h-5 w-5 rounded-sm border" style={{ backgroundColor: f.textColor }} />
             <span className="text-xs">{f.textColor.toUpperCase()}</span>
             <input
               type="color"
@@ -975,7 +1283,9 @@ function FooterPanel() {
               type="button"
               onClick={() => set(b.key, !f[b.key])}
               className={`w-10 py-1.5 text-sm ${b.cls} ${
-                f[b.key] ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                f[b.key]
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
               }`}
             >
               {b.label}
@@ -1064,7 +1374,7 @@ function FooterPanel() {
 
 type BrandColor = { label: string; value: string; hint?: boolean };
 
-function ThemePanel() {
+function ThemePanel({ onApply }: { onApply: (backgroundColor: string) => void }) {
   const [creating, setCreating] = useState(false);
   const [section, setSection] = useState<"colors" | "typography">("colors");
   const [colors, setColors] = useState<BrandColor[]>([
@@ -1147,7 +1457,9 @@ function ThemePanel() {
                 <input
                   value={c.value}
                   onChange={(e) =>
-                    setColors((s) => s.map((x, xi) => (xi === i ? { ...x, value: e.target.value } : x)))
+                    setColors((s) =>
+                      s.map((x, xi) => (xi === i ? { ...x, value: e.target.value } : x)),
+                    )
                   }
                   className="w-20 bg-transparent text-xs outline-none"
                 />
@@ -1190,7 +1502,14 @@ function ThemePanel() {
         <Button variant="ghost" size="sm" onClick={() => setCreating(false)}>
           Cancel
         </Button>
-        <Button size="sm" className="rounded-full px-5" onClick={() => toast.success("Brand kit saved")}>
+        <Button
+          size="sm"
+          className="rounded-full px-5"
+          onClick={() => {
+            onApply(colors[0]?.value ?? "#FFFFFF");
+            toast.success("Brand kit saved and applied");
+          }}
+        >
           Save
         </Button>
       </div>
