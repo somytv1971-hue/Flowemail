@@ -37,6 +37,13 @@ import {
   Lightbulb,
   Trash2,
   GripVertical,
+  Monitor,
+  Smartphone,
+  Mail,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 
