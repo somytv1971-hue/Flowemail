@@ -298,7 +298,7 @@ function BuilderPage() {
         },
       }),
     onSuccess: () => toast.success("Saved"),
-    onError: (e: any) => toast.error(e.message ?? "Could not save"),
+    onError: (error: Error) => toast.error(error.message || "Could not save"),
   });
 
   return (
@@ -371,6 +371,8 @@ function BuilderPage() {
                 setDragOver(false);
                   const type = e.dataTransfer.getData("text/block") as BlockType;
                   if (type && BASIC_BLOCKS.some((item) => item.type === type)) addBlock(type);
+                  const section = e.dataTransfer.getData("text/section");
+                  if (section && SECTION_LAYOUTS.includes(section)) addSection(section);
               }}
               className={`rounded-lg border-2 border-dashed bg-card p-4 transition ${
                 dragOver ? "border-primary bg-primary/5" : "border-border"
