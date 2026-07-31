@@ -131,8 +131,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <ProfileItem icon={Settings} label="Manage account" />
                     <ProfileItem icon={Palette} label="Brand kit" />
                     <ProfileItem icon={UsersRound} label="Team" />
-                    <ProfileItem icon={AtSign} label="Emails and domains" />
+                    <ProfileItem icon={AtSign} label="Emails and domains" to="/emails-and-domains" />
                     <ProfileItem icon={ImageIcon} label="Files and images" />
+
                     <ProfileItem icon={Smartphone} label="Mobile apps" />
                     <ProfileItem icon={Gift} label="Refer a friend" />
                     <ProfileItem icon={Handshake} label="Affiliate program" />
@@ -213,14 +214,29 @@ function SubItem({
 function ProfileItem({
   icon: Icon,
   label,
+  to,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
+  to?: string;
 }) {
-  return (
-    <DropdownMenuItem className="cursor-pointer gap-2 py-2 text-sm font-medium">
+  const content = (
+    <>
       <Icon className="h-4 w-4 text-muted-foreground" />
       {label}
+    </>
+  );
+  if (to) {
+    return (
+      <DropdownMenuItem asChild className="cursor-pointer gap-2 py-2 text-sm font-medium">
+        <Link to={to}>{content}</Link>
+      </DropdownMenuItem>
+    );
+  }
+  return (
+    <DropdownMenuItem className="cursor-pointer gap-2 py-2 text-sm font-medium">
+      {content}
     </DropdownMenuItem>
   );
 }
+
