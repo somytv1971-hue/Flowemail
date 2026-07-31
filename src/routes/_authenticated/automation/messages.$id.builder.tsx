@@ -1007,11 +1007,12 @@ function HeaderPanel({
 
       {h.mode === "logo" && (
         <>
-          <LogoUploader value={h.imageUrl} alt={h.altText} onChange={(url) => set("imageUrl", url)} />
-        </>
-      )}
-      {h.mode === "logo" && (
-        <>
+          <LogoUploader
+            value={h.imageUrl}
+            alt={h.altText}
+            onChange={(url: string) => set("imageUrl", url)}
+          />
+
 
 
           <div>
