@@ -29,27 +29,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { sendSenderConfirmation } from "@/lib/sender-emails.functions";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  listSenderEmails,
+  addSenderEmail,
+  resendSenderConfirmation,
+  deleteSenderEmail,
+  setDefaultSenderEmail,
+} from "@/lib/sender-emails.functions";
 
-async function sendConfirmation(email: string, senderName: string) {
-  try {
-    const result = await sendSenderConfirmation({ data: { email, senderName } });
-    if (result.sent) {
-      toast.success("Confirmation email sent", {
-        description: `Check ${email} and confirm to start sending from it.`,
-      });
-    } else {
-      toast.warning("Email not delivered", {
-        description: `${email} is blocked from receiving mail (previous bounce or unsubscribe).`,
-      });
-    }
-  } catch (error) {
-    toast.error("Couldn't send the confirmation email", {
-      description:
-        error instanceof Error ? error.message : "Please try again in a moment.",
-    });
-  }
-}
 
 
 export const Route = createFileRoute("/_authenticated/emails-and-domains")({
@@ -87,56 +75,96 @@ type DomainRow = {
   addresses: Address[];
 };
 
-const INITIAL: DomainRow[] = [
-  {
-    id: "d1",
-    domain: "gmail.com",
-    spf: "Added",
-    dmarc: "Added",
-    dkim: "At risk",
-    addresses: [
-      {
-        id: "a1",
-        name: "Tangail Model",
-        email: "mdradyan20@gmail.com",
-        purpose: "Default",
-        status: "Confirmed",
-      },
-    ],
-  },
-  {
-    id: "d2",
-    domain: "digitalgoodsmart.xyz",
-    spf: "Added",
-    dmarc: "Added",
-    dkim: "DKIM-authenticated",
-    addresses: [
-      {
-        id: "a2",
-        name: "Digital Goods",
-        email: "hello@digitalgoodsmart.xyz",
-        purpose: "",
-        status: "Confirmed",
-      },
-      {
-        id: "a3",
-        name: "Support",
-        email: "support@digitalgoodsmart.xyz",
-        purpose: "",
-        status: "Pending",
-      },
-    ],
-  },
-];
-
 function Page() {
+  const qc = useQueryClient();
   const [tab, setTab] = useState<"emails" | "domains">("emails");
   const [showBanner, setShowBanner] = useState(true);
   const [query, setQuery] = useState("");
-  const [rows, setRows] = useState<DomainRow[]>(INITIAL);
-  const [expanded, setExpanded] = useState<string[]>(["d1"]);
+  const [expanded, setExpanded] = useState<string[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [aliasOpen, setAliasOpen] = useState(false);
+
+  const { data: senders = [] } = useQuery({
+    queryKey: ["sender-emails"],
+    queryFn: () => listSenderEmails(),
+  });
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["sender-emails"] });
+
+  const rows: DomainRow[] = useMemo(() => {
+    const map = new Map<string, DomainRow>();
+    for (const s of senders) {
+      const domain = s.email.split("@")[1]?.toLowerCase() ?? "";
+      const isFree = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com"].includes(domain);
+      if (!map.has(domain)) {
+        map.set(domain, {
+          id: domain,
+          domain,
+          spf: isFree ? "Added" : "Missing",
+          dmarc: isFree ? "Added" : "Missing",
+          dkim: isFree ? "At risk" : "DKIM-authenticated",
+          addresses: [],
+        });
+      }
+      map.get(domain)!.addresses.push({
+        id: s.id,
+        name: s.name || s.email.split("@")[0],
+        email: s.email,
+        purpose: s.is_default ? "Default" : "",
+        status: s.status === "confirmed" ? "Confirmed" : "Pending",
+      });
+    }
+    return [...map.values()];
+  }, [senders]);
+
+  const addMutation = useMutation({
+    mutationFn: (vars: { name: string; email: string }) =>
+      addSenderEmail({ data: { email: vars.email, name: vars.name } }),
+    onSuccess: (res, vars) => {
+      invalidate();
+      setExpanded((e) =>
+        e.includes(vars.email.split("@")[1] ?? "") ? e : [...e, vars.email.split("@")[1] ?? ""],
+      );
+      if (res.sent) {
+        toast.success("Confirmation email sent", {
+          description: `Check ${vars.email} and click the link to confirm it.`,
+        });
+      } else {
+        toast.warning("Email not delivered", {
+          description: `${vars.email} is blocked from receiving mail (previous bounce or unsubscribe).`,
+        });
+      }
+    },
+    onError: (error: unknown) =>
+      toast.error("Couldn't add the address", {
+        description: error instanceof Error ? error.message : "Please try again in a moment.",
+      }),
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: (id: string) => resendSenderConfirmation({ data: { id } }),
+    onSuccess: () => toast.success("Confirmation email sent again"),
+    onError: (error: unknown) =>
+      toast.error("Couldn't resend the confirmation", {
+        description: error instanceof Error ? error.message : "Please try again in a moment.",
+      }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteSenderEmail({ data: { id } }),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Email address removed");
+    },
+  });
+
+  const defaultMutation = useMutation({
+    mutationFn: (id: string) => setDefaultSenderEmail({ data: { id } }),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Default sender updated");
+    },
+  });
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -154,62 +182,7 @@ function Page() {
   const toggle = (id: string) =>
     setExpanded((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]));
 
-  const addEmail = (name: string, email: string) => {
-    const domain = email.split("@")[1]?.toLowerCase() ?? "";
-    setRows((prev) => {
-      const existing = prev.find((r) => r.domain === domain);
-      const address: Address = {
-        id: crypto.randomUUID(),
-        name,
-        email,
-        purpose: "",
-        status: "Pending",
-      };
-      if (existing) {
-        return prev.map((r) =>
-          r.id === existing.id ? { ...r, addresses: [...r.addresses, address] } : r,
-        );
-      }
-      const row: DomainRow = {
-        id: crypto.randomUUID(),
-        domain,
-        spf: "Missing",
-        dmarc: "Missing",
-        dkim: "At risk",
-        addresses: [address],
-      };
-      setExpanded((e) => [...e, row.id]);
-      return [...prev, row];
-    });
-    void sendConfirmation(email, name);
-
-  };
-
-  const setDefault = (domainId: string, addressId: string) => {
-    setRows((prev) =>
-      prev.map((r) => ({
-        ...r,
-        addresses: r.addresses.map((a) => ({
-          ...a,
-          purpose: r.id === domainId && a.id === addressId ? "Default" : "",
-        })),
-      })),
-    );
-    toast.success("Default sender updated");
-  };
-
-  const removeAddress = (domainId: string, addressId: string) => {
-    setRows((prev) =>
-      prev
-        .map((r) =>
-          r.id === domainId
-            ? { ...r, addresses: r.addresses.filter((a) => a.id !== addressId) }
-            : r,
-        )
-        .filter((r) => r.addresses.length > 0),
-    );
-    toast.success("Email address removed");
-  };
+  const addEmail = (name: string, email: string) => addMutation.mutate({ name, email });
 
   return (
     <div className="rounded-2xl border bg-card p-6 shadow-sm">
@@ -422,21 +395,19 @@ function Page() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                           <DropdownMenuItem
-                                            onClick={() => setDefault(row.id, a.id)}
+                                            onClick={() => defaultMutation.mutate(a.id)}
                                           >
                                             Set as default
                                           </DropdownMenuItem>
                                           <DropdownMenuItem
-                                            onClick={() =>
-                                              void sendConfirmation(a.email, a.name)
-                                            }
+                                            onClick={() => resendMutation.mutate(a.id)}
                                           >
                                             Resend confirmation
                                           </DropdownMenuItem>
 
                                           <DropdownMenuItem
                                             className="text-destructive"
-                                            onClick={() => removeAddress(row.id, a.id)}
+                                            onClick={() => deleteMutation.mutate(a.id)}
                                           >
                                             Delete
                                           </DropdownMenuItem>
