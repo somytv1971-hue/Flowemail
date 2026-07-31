@@ -29,6 +29,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { sendSenderConfirmation } from "@/lib/sender-emails.functions";
+
+async function sendConfirmation(email: string, senderName: string) {
+  try {
+    const result = await sendSenderConfirmation({ data: { email, senderName } });
+    if (result.sent) {
+      toast.success("Confirmation email sent", {
+        description: `Check ${email} and confirm to start sending from it.`,
+      });
+    } else {
+      toast.warning("Email not delivered", {
+        description: `${email} is blocked from receiving mail (previous bounce or unsubscribe).`,
+      });
+    }
+  } catch (error) {
+    toast.error("Couldn't send the confirmation email", {
+      description:
+        error instanceof Error ? error.message : "Please try again in a moment.",
+    });
+  }
+}
+
 
 export const Route = createFileRoute("/_authenticated/emails-and-domains")({
   head: () => ({
@@ -159,9 +181,8 @@ function Page() {
       setExpanded((e) => [...e, row.id]);
       return [...prev, row];
     });
-    toast.success("Confirmation email sent", {
-      description: `Confirm ${email} to start sending from it.`,
-    });
+    void sendConfirmation(email, name);
+
   };
 
   const setDefault = (domainId: string, addressId: string) => {
@@ -407,11 +428,12 @@ function Page() {
                                           </DropdownMenuItem>
                                           <DropdownMenuItem
                                             onClick={() =>
-                                              toast.success("Confirmation email resent")
+                                              void sendConfirmation(a.email, a.name)
                                             }
                                           >
                                             Resend confirmation
                                           </DropdownMenuItem>
+
                                           <DropdownMenuItem
                                             className="text-destructive"
                                             onClick={() => removeAddress(row.id, a.id)}

@@ -18,6 +18,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated/contacts'
 import { Route as AuthenticatedAutoresponderRouteImport } from './routes/_authenticated/autoresponder'
 import { Route as AuthenticatedAutomationIndexRouteImport } from './routes/_authenticated/automation/index'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as AuthenticatedAutomationWorkflowsNewRouteImport } from './routes/_authenticated/automation/workflows.new'
 import { Route as AuthenticatedAutomationWorkflowsIdRouteImport } from './routes/_authenticated/automation/workflows.$id'
 import { Route as AuthenticatedAutomationMessagesIdIndexRouteImport } from './routes/_authenticated/automation/messages.$id.index'
@@ -71,6 +72,12 @@ const AuthenticatedAutomationIndexRoute =
     path: '/automation/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAutomationWorkflowsNewRoute =
   AuthenticatedAutomationWorkflowsNewRouteImport.update({
     id: '/automation/workflows/new',
@@ -113,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/automation/': typeof AuthenticatedAutomationIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/automation/messages/$id/builder': typeof AuthenticatedAutomationMessagesIdBuilderRoute
   '/automation/messages/$id/design': typeof AuthenticatedAutomationMessagesIdDesignRoute
   '/automation/messages/$id/': typeof AuthenticatedAutomationMessagesIdIndexRoute
@@ -128,6 +136,7 @@ export interface FileRoutesByTo {
   '/automation': typeof AuthenticatedAutomationIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/automation/messages/$id/builder': typeof AuthenticatedAutomationMessagesIdBuilderRoute
   '/automation/messages/$id/design': typeof AuthenticatedAutomationMessagesIdDesignRoute
   '/automation/messages/$id': typeof AuthenticatedAutomationMessagesIdIndexRoute
@@ -145,6 +154,7 @@ export interface FileRoutesById {
   '/_authenticated/automation/': typeof AuthenticatedAutomationIndexRoute
   '/_authenticated/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/_authenticated/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/_authenticated/automation/messages/$id/builder': typeof AuthenticatedAutomationMessagesIdBuilderRoute
   '/_authenticated/automation/messages/$id/design': typeof AuthenticatedAutomationMessagesIdDesignRoute
   '/_authenticated/automation/messages/$id/': typeof AuthenticatedAutomationMessagesIdIndexRoute
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/automation/'
     | '/automation/workflows/$id'
     | '/automation/workflows/new'
+    | '/lovable/email/transactional/preview'
     | '/automation/messages/$id/builder'
     | '/automation/messages/$id/design'
     | '/automation/messages/$id/'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/automation'
     | '/automation/workflows/$id'
     | '/automation/workflows/new'
+    | '/lovable/email/transactional/preview'
     | '/automation/messages/$id/builder'
     | '/automation/messages/$id/design'
     | '/automation/messages/$id'
@@ -193,6 +205,7 @@ export interface FileRouteTypes {
     | '/_authenticated/automation/'
     | '/_authenticated/automation/workflows/$id'
     | '/_authenticated/automation/workflows/new'
+    | '/lovable/email/transactional/preview'
     | '/_authenticated/automation/messages/$id/builder'
     | '/_authenticated/automation/messages/$id/design'
     | '/_authenticated/automation/messages/$id/'
@@ -202,6 +215,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -268,6 +282,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/automation/'
       preLoaderRoute: typeof AuthenticatedAutomationIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/automation/workflows/new': {
       id: '/_authenticated/automation/workflows/new'
@@ -347,17 +368,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
