@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -18,6 +18,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Plus,
   ChevronLeft,
@@ -94,9 +101,41 @@ const BASIC_BLOCKS: Array<{ type: BlockType; label: string; icon: typeof Type; b
 
 const SECTION_LAYOUTS = ["1 column", "2 columns", "3 columns", "Left sidebar", "Right sidebar"];
 
-type Block = { key: string; type: BlockType };
+type SectionLayout = (typeof SECTION_LAYOUTS)[number];
+type Block = {
+  key: string;
+  type: BlockType;
+  content?: string;
+  url?: string;
+  layout?: SectionLayout;
+};
 
-function BlockPreview({ type }: { type: BlockType }) {
+type BuilderDocument = {
+  version: 1;
+  blocks: Block[];
+  style: MessageStyle;
+};
+
+const DEFAULT_STYLE: MessageStyle = {
+  width: 600,
+  backgroundColor: "#FFFFFF",
+  backgroundImageOn: false,
+  imageUrl: "",
+  customCss: "",
+};
+
+function parseDocument(value: string | null | undefined): BuilderDocument | null {
+  if (!value?.startsWith("FLOWMAIL_BUILDER:")) return null;
+  try {
+    const parsed = JSON.parse(value.slice("FLOWMAIL_BUILDER:".length)) as BuilderDocument;
+    return parsed.version === 1 && Array.isArray(parsed.blocks) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function BlockPreview({ block }: { block: Block }) {
+  const { type } = block;
   switch (type) {
     case "image":
       return (
@@ -107,15 +146,14 @@ function BlockPreview({ type }: { type: BlockType }) {
     case "text":
       return (
         <p className="text-sm leading-relaxed text-foreground">
-          Write your message here. Click to edit this text block and tell your subscribers what
-          matters.
+          {block.content || "Write your message here. Click to edit this text block."}
         </p>
       );
     case "button":
       return (
         <div className="flex justify-center">
           <span className="rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground">
-            Click here
+            {block.content || "Click here"}
           </span>
         </div>
       );
@@ -156,7 +194,7 @@ function BlockPreview({ type }: { type: BlockType }) {
     case "html":
       return (
         <pre className="overflow-x-auto rounded bg-muted p-3 font-mono text-xs text-muted-foreground">
-          {"<div>Custom HTML</div>"}
+          {block.content || "<div>Custom HTML</div>"}
         </pre>
       );
   }
@@ -177,17 +215,36 @@ function BuilderPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<"layout" | "style">("layout");
   const [dragOver, setDragOver] = useState(false);
-  const [style, setStyle] = useState<MessageStyle>({
-    width: 600,
-    backgroundColor: "#FFFFFF",
-    backgroundImageOn: true,
-    imageUrl: "",
-    customCss: "",
-  });
+  const [style, setStyle] = useState<MessageStyle>(DEFAULT_STYLE);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [history, setHistory] = useState<Block[][]>([]);
+  const [future, setFuture] = useState<Block[][]>([]);
+  const [ready, setReady] = useState(false);
+  const draggedKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!msg || ready) return;
+    const document = parseDocument(msg.content_html);
+    if (document) {
+      setBlocks(document.blocks);
+      setStyle({ ...DEFAULT_STYLE, ...document.style });
+    }
+    setReady(true);
+  }, [msg, ready]);
+
+  const commitBlocks = (updater: (current: Block[]) => Block[]) => {
+    setBlocks((current) => {
+      const next = updater(current);
+      if (next === current) return current;
+      setHistory((items) => [...items.slice(-29), current]);
+      setFuture([]);
+      return next;
+    });
+  };
 
   const addBlock = (type: BlockType, index?: number) => {
     const block = { key: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type };
-    setBlocks((b) => {
+    commitBlocks((b) => {
       const next = [...b];
       next.splice(index ?? next.length, 0, block);
       return next;
@@ -195,12 +252,50 @@ function BuilderPage() {
     setSelected(block.key);
   };
 
+  const addSection = (layout: SectionLayout) => {
+    const columns = layout === "3 columns" ? 3 : layout === "1 column" ? 1 : 2;
+    const additions: Block[] = Array.from({ length: columns }, (_, index) => ({
+      key: `text-${Date.now()}-${index}`,
+      type: "text",
+      content: `${layout} — column ${index + 1}`,
+      layout,
+    }));
+    commitBlocks((current) => [...current, ...additions]);
+    setSelected(additions[0]?.key ?? null);
+  };
+
+  const updateSelected = (patch: Partial<Block>) => {
+    if (!selected) return;
+    commitBlocks((current) =>
+      current.map((block) => (block.key === selected ? { ...block, ...patch } : block)),
+    );
+  };
+
+  const undo = () => {
+    const previous = history.at(-1);
+    if (!previous) return;
+    setFuture((items) => [blocks, ...items].slice(0, 30));
+    setHistory((items) => items.slice(0, -1));
+    setBlocks(previous);
+  };
+
+  const redo = () => {
+    const next = future[0];
+    if (!next) return;
+    setHistory((items) => [...items, blocks].slice(-30));
+    setFuture((items) => items.slice(1));
+    setBlocks(next);
+  };
+
+  const documentValue = () =>
+    `FLOWMAIL_BUILDER:${JSON.stringify({ version: 1, blocks, style } satisfies BuilderDocument)}`;
+
   const save = useMutation({
     mutationFn: () =>
       update({
         data: {
           id,
-          content_html: blocks.map((b) => `<!-- block:${b.type} -->`).join("\n"),
+          content_html: documentValue(),
         },
       }),
     onSuccess: () => toast.success("Saved"),
@@ -219,19 +314,23 @@ function BuilderPage() {
           <ChevronLeft className="h-4 w-4" /> Back to design and content
         </button>
         <div className="ml-2 flex items-center gap-2 text-muted-foreground">
-          <Undo2 className="h-4 w-4" />
-          <Redo2 className="h-4 w-4" />
+          <Button variant="ghost" size="icon" onClick={undo} disabled={!history.length} title="Undo">
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={redo} disabled={!future.length} title="Redo">
+            <Redo2 className="h-4 w-4" />
+          </Button>
           <span className="ml-2 inline-flex items-center gap-1 text-xs">
             <Save className="h-3.5 w-3.5" /> {save.isPending ? "Saving…" : "Saved"}
           </span>
         </div>
         <div className="ml-auto flex items-center gap-4">
-          <button type="button" className="text-sm font-medium text-primary hover:underline">
+          <button type="button" onClick={() => setPreviewOpen(true)} className="text-sm font-medium text-primary hover:underline">
             Test and preview
           </button>
           <button
             type="button"
-            onClick={() => save.mutate()}
+            onClick={() => save.mutate(undefined, { onSuccess: () => navigate({ to: "/automation/messages/$id", params: { id } }) })}
             className="text-sm font-medium text-primary hover:underline"
           >
             Save and exit
@@ -252,8 +351,11 @@ function BuilderPage() {
 
       <div className="flex min-h-0 flex-1">
         {/* Canvas */}
-        <div className="min-w-0 flex-1 overflow-y-auto bg-muted/40 p-8">
-          <div className="mx-auto max-w-xl">
+        <div
+          className="min-w-0 flex-1 overflow-y-auto bg-muted/40 p-8"
+          style={{ backgroundColor: style.backgroundColor, backgroundImage: style.backgroundImageOn && style.imageUrl ? `url(${style.imageUrl})` : undefined }}
+        >
+          <div className="mx-auto" style={{ maxWidth: `${style.width}px` }}>
             <div className="mx-auto mb-6 w-32 rounded border border-dashed bg-card py-2 text-center text-xs tracking-widest text-muted-foreground">
               LOGO
             </div>
@@ -267,8 +369,10 @@ function BuilderPage() {
               onDrop={(e) => {
                 e.preventDefault();
                 setDragOver(false);
-                const type = e.dataTransfer.getData("text/block") as BlockType;
-                if (type) addBlock(type);
+                  const type = e.dataTransfer.getData("text/block") as BlockType;
+                  const layout = e.dataTransfer.getData("text/section") as SectionLayout;
+                  if (type) addBlock(type);
+                  if (layout) addSection(layout);
               }}
               className={`rounded-lg border-2 border-dashed bg-card p-4 transition ${
                 dragOver ? "border-primary bg-primary/5" : "border-border"
@@ -281,9 +385,31 @@ function BuilderPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {blocks.map((b) => (
+                  {blocks.map((b, index) => (
                     <div
                       key={b.key}
+                      draggable
+                      onDragStart={(event) => {
+                        draggedKey.current = b.key;
+                        event.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        const fromKey = draggedKey.current;
+                        if (!fromKey || fromKey === b.key) return;
+                        commitBlocks((current) => {
+                          const from = current.findIndex((item) => item.key === fromKey);
+                          if (from < 0) return current;
+                          const next = [...current];
+                          const [moved] = next.splice(from, 1);
+                          if (!moved) return current;
+                          next.splice(index, 0, moved);
+                          return next;
+                        });
+                        draggedKey.current = null;
+                      }}
                       onClick={() => setSelected(b.key)}
                       className={`group relative rounded border p-4 transition ${
                         selected === b.key
@@ -291,14 +417,15 @@ function BuilderPage() {
                           : "border-transparent hover:border-border"
                       }`}
                     >
-                      <BlockPreview type={b.type} />
+                      <BlockPreview block={b} />
                       <div className="absolute right-2 top-2 hidden items-center gap-1 group-hover:flex">
                         <GripVertical className="h-4 w-4 text-muted-foreground" />
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setBlocks((s) => s.filter((x) => x.key !== b.key));
+                            commitBlocks((s) => s.filter((x) => x.key !== b.key));
+                            if (selected === b.key) setSelected(null);
                           }}
                           className="text-muted-foreground hover:text-destructive"
                         >
@@ -348,16 +475,42 @@ function BuilderPage() {
                 <AccordionContent className="px-3">
                   <div className="grid grid-cols-2 gap-2">
                     {SECTION_LAYOUTS.map((s) => (
-                      <div
+                      <button
+                        type="button"
+                        draggable
+                        onDragStart={(e) => e.dataTransfer.setData("text/section", s)}
+                        onClick={() => addSection(s)}
                         key={s}
                         className="rounded-lg border p-3 text-center text-xs text-muted-foreground hover:border-primary hover:text-foreground"
                       >
                         {s}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </AccordionContent>
               </AccordionItem>
+
+              {selected && (
+                <AccordionItem value="selected">
+                  <AccordionTrigger className="px-3 text-sm">Selected block</AccordionTrigger>
+                  <AccordionContent className="space-y-3 px-3">
+                    <Label htmlFor="block-content">Content</Label>
+                    <Textarea
+                      id="block-content"
+                      value={blocks.find((block) => block.key === selected)?.content ?? ""}
+                      onChange={(event) => updateSelected({ content: event.target.value })}
+                      placeholder="Edit block content"
+                    />
+                    {(["image", "video", "button"] as BlockType[]).includes(blocks.find((block) => block.key === selected)?.type ?? "text") && (
+                      <Input
+                        value={blocks.find((block) => block.key === selected)?.url ?? ""}
+                        onChange={(event) => updateSelected({ url: event.target.value })}
+                        placeholder="Destination or media URL"
+                      />
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              )}
 
               <AccordionItem value="basic">
                 <AccordionTrigger className="px-3 text-sm">
@@ -409,6 +562,19 @@ function BuilderPage() {
           )}
         </aside>
       </div>
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Message preview</DialogTitle>
+            <DialogDescription>Desktop preview of the saved email content.</DialogDescription>
+          </DialogHeader>
+          <div className="mx-auto w-full rounded border bg-card p-6" style={{ maxWidth: `${style.width}px` }}>
+            <div className="space-y-3">
+              {blocks.length ? blocks.map((block) => <BlockPreview key={block.key} block={block} />) : <p className="text-center text-sm text-muted-foreground">Your message is empty.</p>}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
