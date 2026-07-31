@@ -99,7 +99,6 @@ function Page() {
   const [listSearch, setListSearch] = useState("");
   const [contactSearch, setContactSearch] = useState("");
   const [sortAsc, setSortAsc] = useState(false);
-  const [showAllContacts, setShowAllContacts] = useState(false);
 
   const [openList, setOpenList] = useState(false);
   const [openContacts, setOpenContacts] = useState(false);
