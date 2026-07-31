@@ -572,8 +572,8 @@ function MessageStylePanel({
 
       <AccordionItem value="footer">
         <AccordionTrigger className="px-3 text-sm">Footer</AccordionTrigger>
-        <AccordionContent className="px-3 pb-4 text-xs text-muted-foreground">
-          Configure the footer, address block and unsubscribe links.
+        <AccordionContent className="px-3 pb-5">
+          <FooterPanel />
         </AccordionContent>
       </AccordionItem>
 
