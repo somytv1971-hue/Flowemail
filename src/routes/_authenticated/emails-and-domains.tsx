@@ -181,9 +181,8 @@ function Page() {
       setExpanded((e) => [...e, row.id]);
       return [...prev, row];
     });
-    toast.success("Confirmation email sent", {
-      description: `Confirm ${email} to start sending from it.`,
-    });
+    void sendConfirmation(email, name);
+
   };
 
   const setDefault = (domainId: string, addressId: string) => {
@@ -429,11 +428,12 @@ function Page() {
                                           </DropdownMenuItem>
                                           <DropdownMenuItem
                                             onClick={() =>
-                                              toast.success("Confirmation email resent")
+                                              void sendConfirmation(a.email, a.name)
                                             }
                                           >
                                             Resend confirmation
                                           </DropdownMenuItem>
+
                                           <DropdownMenuItem
                                             className="text-destructive"
                                             onClick={() => removeAddress(row.id, a.id)}
