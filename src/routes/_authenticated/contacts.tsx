@@ -579,6 +579,8 @@ function CreateListDialog({
   );
 }
 
+type AddMethod = "choose" | "single" | "file" | "integration" | "form";
+
 function AddContactsDialog({
   open,
   onOpenChange,
@@ -590,15 +592,21 @@ function AddContactsDialog({
   lists: { id: string; name: string }[];
   onDone: () => void;
 }) {
-  const [mode, setMode] = useState<"single" | "bulk">("single");
+  const [step, setStep] = useState<AddMethod>("choose");
   const [listId, setListId] = useState("");
   const [email, setEmail] = useState("");
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [tags, setTags] = useState("");
   const [raw, setRaw] = useState("");
+  const [fileName, setFileName] = useState("");
 
   const activeList = listId || lists[0]?.id || "";
+
+  const close = (v: boolean) => {
+    onOpenChange(v);
+    if (!v) setTimeout(() => setStep("choose"), 200);
+  };
 
   const single = useMutation({
     mutationFn: () =>
@@ -620,7 +628,7 @@ function AddContactsDialog({
       setFirst("");
       setLast("");
       setTags("");
-      onOpenChange(false);
+      close(false);
       onDone();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -631,43 +639,78 @@ function AddContactsDialog({
     onSuccess: (r) => {
       toast.success(`${r.inserted} contacts imported`);
       setRaw("");
-      onOpenChange(false);
+      setFileName("");
+      close(false);
       onDone();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const readFile = async (file: File | undefined) => {
+    if (!file) return;
+    const text = await file.text();
+    setFileName(file.name);
+    setRaw(text);
+  };
+
+  const listPicker = (
+    <div className="space-y-2">
+      <Label>List</Label>
+      <Select value={activeList} onValueChange={setListId}>
+        <SelectTrigger>
+          <SelectValue placeholder="Choose a list" />
+        </SelectTrigger>
+        <SelectContent>
+          {lists.map((l) => (
+            <SelectItem key={l.id} value={l.id}>
+              {l.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Add contacts</DialogTitle>
-          <DialogDescription>Add one contact or paste many at once.</DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>List</Label>
-            <Select value={activeList} onValueChange={setListId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a list" />
-              </SelectTrigger>
-              <SelectContent>
-                {lists.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>
-                    {l.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Tabs value={mode} onValueChange={(v) => setMode(v as "single" | "bulk")}>
-            <TabsList>
-              <TabsTrigger value="single">Single contact</TabsTrigger>
-              <TabsTrigger value="bulk">Paste list</TabsTrigger>
-            </TabsList>
-            <TabsContent value="single" className="space-y-4 pt-4">
+    <Dialog open={open} onOpenChange={close}>
+      <DialogContent className={step === "choose" ? "max-w-3xl" : "max-w-lg"}>
+        {step === "choose" ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-center font-display text-2xl">
+                How do you want to add contacts?
+              </DialogTitle>
+              <DialogDescription className="sr-only">Choose an import method</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4 sm:grid-cols-2 lg:grid-cols-4">
+              {(
+                [
+                  { key: "single", label: "One by one", icon: UserPlus },
+                  { key: "file", label: "From file", icon: FileText },
+                  { key: "integration", label: "Via integration", icon: RefreshCw },
+                  { key: "form", label: "Via signup form", icon: ClipboardList },
+                ] as const
+              ).map((o) => (
+                <button
+                  key={o.key}
+                  type="button"
+                  onClick={() => setStep(o.key)}
+                  className="flex flex-col items-center gap-4 rounded-2xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
+                >
+                  <o.icon className="h-9 w-9 text-primary" strokeWidth={1.5} />
+                  <span className="text-sm font-medium">{o.label}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : step === "single" ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Add one contact</DialogTitle>
+              <DialogDescription>Enter the contact details manually.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {listPicker}
               <div className="space-y-2">
                 <Label htmlFor="c-email">Email</Label>
                 <Input
@@ -697,40 +740,98 @@ function AddContactsDialog({
                   placeholder="lead, webinar"
                 />
               </div>
-            </TabsContent>
-            <TabsContent value="bulk" className="space-y-2 pt-4">
-              <Label htmlFor="c-bulk">Emails</Label>
-              <Textarea
-                id="c-bulk"
-                rows={6}
-                value={raw}
-                onChange={(e) => setRaw(e.target.value)}
-                placeholder={"one@example.com\ntwo@example.com"}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          {mode === "single" ? (
-            <Button
-              disabled={!activeList || !email.trim() || single.isPending}
-              onClick={() => single.mutate()}
-            >
-              Add contact
-            </Button>
-          ) : (
-            <Button
-              disabled={!activeList || !raw.trim() || bulk.isPending}
-              onClick={() => bulk.mutate()}
-            >
-              Import contacts
-            </Button>
-          )}
-        </DialogFooter>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setStep("choose")}>
+                Back
+              </Button>
+              <Button
+                disabled={!activeList || !email.trim() || single.isPending}
+                onClick={() => single.mutate()}
+              >
+                Add contact
+              </Button>
+            </DialogFooter>
+          </>
+        ) : step === "file" ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Add contacts from file</DialogTitle>
+              <DialogDescription>
+                Upload a CSV or TXT file, or paste addresses below.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {listPicker}
+              <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed p-8 text-center hover:border-primary">
+                <Upload className="h-6 w-6 text-muted-foreground" />
+                <span className="text-sm font-medium">
+                  {fileName || "Click to choose a CSV / TXT file"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Emails are detected automatically
+                </span>
+                <input
+                  type="file"
+                  accept=".csv,.txt,text/csv,text/plain"
+                  className="hidden"
+                  onChange={(e) => void readFile(e.target.files?.[0])}
+                />
+              </label>
+              <div className="space-y-2">
+                <Label htmlFor="c-bulk">Emails</Label>
+                <Textarea
+                  id="c-bulk"
+                  rows={6}
+                  value={raw}
+                  onChange={(e) => setRaw(e.target.value)}
+                  placeholder={"one@example.com\ntwo@example.com"}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setStep("choose")}>
+                Back
+              </Button>
+              <Button
+                disabled={!activeList || !raw.trim() || bulk.isPending}
+                onClick={() => bulk.mutate()}
+              >
+                Import contacts
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>
+                {step === "integration" ? "Via integration" : "Via signup form"}
+              </DialogTitle>
+              <DialogDescription>
+                {step === "integration"
+                  ? "Sync contacts automatically from an external app."
+                  : "Collect contacts with a hosted signup form."}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed p-10 text-center">
+              {step === "integration" ? (
+                <RefreshCw className="h-8 w-8 text-muted-foreground" />
+              ) : (
+                <ClipboardList className="h-8 w-8 text-muted-foreground" />
+              )}
+              <p className="max-w-sm text-sm text-muted-foreground">
+                This option is coming soon. For now you can add contacts one by one or import them
+                from a file.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setStep("choose")}>
+                Back
+              </Button>
+              <Button onClick={() => setStep("file")}>Import from file</Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
