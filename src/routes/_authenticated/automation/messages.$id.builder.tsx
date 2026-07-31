@@ -1007,51 +1007,12 @@ function HeaderPanel({
 
       {h.mode === "logo" && (
         <>
-          <div className="flex gap-4">
-            <div className="h-20 w-20 shrink-0 rounded border bg-[repeating-linear-gradient(45deg,hsl(var(--muted))_0_6px,transparent_6px_12px)]" />
-            <div className="text-xs text-muted-foreground">
-              <p>Resolution:</p>
-              <p className="mt-1">Size:</p>
-            </div>
-          </div>
-          <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
-            Add image
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = () =>
-                  typeof reader.result === "string" && set("imageUrl", reader.result);
-                reader.readAsDataURL(file);
-              }}
-            />
-          </label>
+          <LogoUploader value={h.imageUrl} alt={h.altText} onChange={(url) => set("imageUrl", url)} />
+        </>
+      )}
+      {h.mode === "logo" && (
+        <>
 
-          <div>
-            <Label className="text-sm">Embed from a URL</Label>
-            <div className="mt-2 flex">
-              <Input
-                value={h.imageUrl}
-                onChange={(e) => set("imageUrl", e.target.value)}
-                placeholder="Enter image URL"
-                className="rounded-r-none"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-l-none border-l-0"
-                onClick={() =>
-                  h.imageUrl ? toast.success("Logo updated") : toast.error("Enter an image URL")
-                }
-              >
-                Go
-              </Button>
-            </div>
-          </div>
 
           <div>
             <Label className="text-sm">Alternative text</Label>
