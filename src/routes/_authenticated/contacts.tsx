@@ -317,7 +317,34 @@ function Page() {
                   </tbody>
                 </table>
               </div>
-            ) : (
+            )}
+          </TabsContent>
+
+          <TabsContent value="Search" className="m-0 p-6">
+            <div className="mx-auto max-w-2xl text-center text-sm text-muted-foreground">
+              {used >= limit ? (
+                <>
+                  You've reached the {limit}-contact limit. To add more,{" "}
+                  <span className="font-medium text-primary">upgrade your account</span>
+                </>
+              ) : (
+                <>
+                  {used} of {limit} contacts used on your plan.
+                </>
+              )}
+            </div>
+            <div className="mx-auto mt-3 max-w-2xl">
+              <div className="relative h-3 rounded-full bg-muted">
+                <div
+                  className="h-3 rounded-full bg-primary transition-all"
+                  style={{ width: `${Math.max(pct, 2)}%` }}
+                />
+                <span className="absolute -top-1 right-0 translate-x-1/4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                  {used}
+                </span>
+              </div>
+            </div>
+            <div className="mt-8">
               <ContactsTable
                 contacts={contacts}
                 lists={lists}
@@ -326,19 +353,9 @@ function Page() {
                 onDelete={(id) => delContact.mutate(id)}
                 onStatus={(id, status) => setStatus.mutate({ id, status })}
               />
-            )}
+            </div>
           </TabsContent>
 
-          <TabsContent value="Search" className="m-0 p-6">
-            <ContactsTable
-              contacts={contacts}
-              lists={lists}
-              search={contactSearch}
-              onSearch={setContactSearch}
-              onDelete={(id) => delContact.mutate(id)}
-              onStatus={(id, status) => setStatus.mutate({ id, status })}
-            />
-          </TabsContent>
 
           <TabsContent value="Reports" className="m-0 p-6">
             <div className="grid gap-4 sm:grid-cols-3">
