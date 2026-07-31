@@ -395,21 +395,19 @@ function Page() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                           <DropdownMenuItem
-                                            onClick={() => setDefault(row.id, a.id)}
+                                            onClick={() => defaultMutation.mutate(a.id)}
                                           >
                                             Set as default
                                           </DropdownMenuItem>
                                           <DropdownMenuItem
-                                            onClick={() =>
-                                              void sendConfirmation(a.email, a.name)
-                                            }
+                                            onClick={() => resendMutation.mutate(a.id)}
                                           >
                                             Resend confirmation
                                           </DropdownMenuItem>
 
                                           <DropdownMenuItem
                                             className="text-destructive"
-                                            onClick={() => removeAddress(row.id, a.id)}
+                                            onClick={() => deleteMutation.mutate(a.id)}
                                           >
                                             Delete
                                           </DropdownMenuItem>
