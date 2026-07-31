@@ -229,11 +229,12 @@ function Page() {
             <div className="mt-3 text-right">
               <button
                 className="text-sm font-medium text-primary hover:underline"
-                onClick={() => setShowAllContacts((v) => !v)}
+                onClick={() => setTab("Search")}
               >
-                {showAllContacts ? "Hide contacts" : `Show all contacts (${contacts.length})`}
+                {`Show all contacts (${contacts.length})`}
               </button>
             </div>
+
 
             {!showAllContacts ? (
               <div className="mt-4 overflow-hidden rounded-xl border">
