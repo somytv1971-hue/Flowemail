@@ -859,6 +859,209 @@ function HeaderPanel() {
   );
 }
 
+type FooterSettings = {
+  fontFamily: string;
+  fontSize: string;
+  textColor: string;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  alignment: "left" | "center" | "right";
+  linksColor: string;
+  backgroundColor: string;
+  transparent: boolean;
+  padChangeIndividually: boolean;
+  padAll: number;
+};
+
+const FOOTER_FONTS = [
+  "Arial",
+  "Verdana",
+  "Georgia",
+  "Tahoma",
+  "Times New Roman",
+  "Courier New",
+  "Trebuchet MS",
+];
+const FOOTER_SIZES = ["10", "11", "12", "14", "16", "18", "20"];
+
+function FooterPanel() {
+  const [f, setF] = useState<FooterSettings>({
+    fontFamily: "Arial",
+    fontSize: "12",
+    textColor: "#000000",
+    bold: false,
+    italic: false,
+    underline: false,
+    alignment: "center",
+    linksColor: "#00BAFF",
+    backgroundColor: "#FFFFFF",
+    transparent: true,
+    padChangeIndividually: false,
+    padAll: 10,
+  });
+  const set = <K extends keyof FooterSettings>(k: K, v: FooterSettings[K]) =>
+    setF((s) => ({ ...s, [k]: v }));
+
+  const aligns = [
+    { key: "left", icon: AlignLeft },
+    { key: "center", icon: AlignCenter },
+    { key: "right", icon: AlignRight },
+  ] as const;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex gap-2 rounded-md bg-muted/60 p-3">
+        <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <div className="space-y-2 text-[11px] leading-snug text-muted-foreground">
+          <p>
+            You cannot remove or hide the unsubscribe link or any other footer element required by
+            consumer privacy and anti-spam laws.
+          </p>
+          <p>
+            The physical address displayed in the footer is taken from the linked list.
+          </p>
+          <button type="button" className="font-medium text-primary hover:underline">
+            Learn more about footer requirements
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-sm">Text style</Label>
+        <div className="flex items-center gap-2">
+          <select
+            value={f.fontFamily}
+            onChange={(e) => set("fontFamily", e.target.value)}
+            className="h-9 flex-1 rounded-md border bg-background px-2 text-sm outline-none"
+          >
+            {FOOTER_FONTS.map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+          </select>
+          <select
+            value={f.fontSize}
+            onChange={(e) => set("fontSize", e.target.value)}
+            className="h-9 w-16 rounded-md border bg-background px-2 text-sm outline-none"
+          >
+            {FOOTER_SIZES.map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+          </select>
+          <label className="flex h-9 cursor-pointer items-center gap-2 rounded-md border px-2">
+            <span
+              className="h-5 w-5 rounded-sm border"
+              style={{ backgroundColor: f.textColor }}
+            />
+            <span className="text-xs">{f.textColor.toUpperCase()}</span>
+            <input
+              type="color"
+              value={f.textColor}
+              onChange={(e) => set("textColor", e.target.value)}
+              className="sr-only"
+            />
+          </label>
+        </div>
+        <div className="flex overflow-hidden rounded-md border">
+          {(
+            [
+              { key: "bold", label: "B", cls: "font-bold" },
+              { key: "italic", label: "I", cls: "italic" },
+              { key: "underline", label: "U", cls: "underline" },
+            ] as const
+          ).map((b) => (
+            <button
+              key={b.key}
+              type="button"
+              onClick={() => set(b.key, !f[b.key])}
+              className={`w-10 py-1.5 text-sm ${b.cls} ${
+                f[b.key] ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Separator />
+
+      <div className="flex items-center justify-between gap-3">
+        <Label className="text-sm">Alignment</Label>
+        <div className="flex overflow-hidden rounded-md border">
+          {aligns.map((a) => (
+            <button
+              key={a.key}
+              type="button"
+              onClick={() => set("alignment", a.key)}
+              className={`px-2 py-1.5 ${
+                f.alignment === a.key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <a.icon className="h-3.5 w-3.5" />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Separator />
+
+      <div className="flex items-center justify-between gap-3">
+        <Label className="text-sm">Links color</Label>
+        <label className="flex cursor-pointer items-center gap-2 rounded-md border px-2 py-1">
+          <span className="h-5 w-5 rounded-sm border" style={{ backgroundColor: f.linksColor }} />
+          <span className="text-sm">{f.linksColor.toUpperCase()}</span>
+          <input
+            type="color"
+            value={f.linksColor}
+            onChange={(e) => set("linksColor", e.target.value)}
+            className="sr-only"
+          />
+        </label>
+      </div>
+
+      <Separator />
+
+      <div className="flex items-center justify-between gap-3">
+        <Label className="text-sm">Background color</Label>
+        <button
+          type="button"
+          onClick={() => set("transparent", !f.transparent)}
+          className="flex items-center gap-2 rounded-md border px-2 py-1 text-sm"
+        >
+          <span className="relative h-5 w-5 overflow-hidden rounded border">
+            {f.transparent ? (
+              <span className="absolute inset-0 bg-[linear-gradient(to_top_right,transparent_45%,hsl(var(--destructive))_45%,hsl(var(--destructive))_55%,transparent_55%)]" />
+            ) : (
+              <span className="absolute inset-0" style={{ backgroundColor: f.backgroundColor }} />
+            )}
+          </span>
+          {f.transparent ? "Transparent" : f.backgroundColor.toUpperCase()}
+        </button>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-3">
+        <Label className="text-sm">Padding</Label>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm text-muted-foreground">Change individually</span>
+          <Switch
+            checked={f.padChangeIndividually}
+            onCheckedChange={(v) => set("padChangeIndividually", v)}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm text-muted-foreground">All</span>
+          <Stepper value={f.padAll} onChange={(v) => set("padAll", v)} max={100} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type BrandColor = { label: string; value: string; hint?: boolean };
 
 function ThemePanel() {
