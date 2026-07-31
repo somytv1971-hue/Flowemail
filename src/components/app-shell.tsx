@@ -131,8 +131,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <ProfileItem icon={Settings} label="Manage account" />
                     <ProfileItem icon={Palette} label="Brand kit" />
                     <ProfileItem icon={UsersRound} label="Team" />
-                    <ProfileItem icon={AtSign} label="Emails and domains" />
+                    <ProfileItem icon={AtSign} label="Emails and domains" to="/emails-and-domains" />
                     <ProfileItem icon={ImageIcon} label="Files and images" />
+
                     <ProfileItem icon={Smartphone} label="Mobile apps" />
                     <ProfileItem icon={Gift} label="Refer a friend" />
                     <ProfileItem icon={Handshake} label="Affiliate program" />
