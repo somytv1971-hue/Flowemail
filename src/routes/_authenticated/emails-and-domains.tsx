@@ -129,9 +129,17 @@ function Page() {
         toast.success("Confirmation email sent", {
           description: `Check ${vars.email} and click the link to confirm it.`,
         });
-      } else {
-        toast.warning("Email not delivered", {
-          description: `${vars.email} is blocked from receiving mail (previous bounce or unsubscribe).`,
+      } else if (res.confirmUrl) {
+        toast.info("Address added — confirmation pending", {
+          description: `We couldn't deliver the email yet. Use the confirmation link to activate ${vars.email}.`,
+          duration: 15000,
+          action: {
+            label: "Copy link",
+            onClick: () => {
+              void navigator.clipboard.writeText(res.confirmUrl);
+              toast.success("Confirmation link copied");
+            },
+          },
         });
       }
     },
@@ -143,12 +151,29 @@ function Page() {
 
   const resendMutation = useMutation({
     mutationFn: (id: string) => resendSenderConfirmation({ data: { id } }),
-    onSuccess: () => toast.success("Confirmation email sent again"),
+    onSuccess: (res) => {
+      if (res.sent) {
+        toast.success("Confirmation email sent again");
+      } else if (res.confirmUrl) {
+        toast.info("Confirmation link ready", {
+          description: "Email delivery isn't active yet — copy the link to confirm this address.",
+          duration: 15000,
+          action: {
+            label: "Copy link",
+            onClick: () => {
+              void navigator.clipboard.writeText(res.confirmUrl);
+              toast.success("Confirmation link copied");
+            },
+          },
+        });
+      }
+    },
     onError: (error: unknown) =>
       toast.error("Couldn't resend the confirmation", {
         description: error instanceof Error ? error.message : "Please try again in a moment.",
       }),
   });
+
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteSenderEmail({ data: { id } }),
