@@ -38,11 +38,20 @@ export const addSenderEmail = createServerFn({ method: 'POST' })
     const { sendTemplateEmail } = await import('@/lib/email-templates/send-email')
     const origin = new URL(getRequest().url).origin
     const confirmUrl = `${origin}/confirm-sender?token=${row.confirm_token}`
-    const result = await sendTemplateEmail('sender-confirmation', row.email, {
-      templateData: { senderName: row.name || undefined, email: row.email, confirmUrl },
-      idempotencyKey: `sender-confirmation-${row.id}-${row.confirm_token}`,
-    })
-    return { row, sent: result.sent }
+    let sent = false
+    let reason: string | null = null
+    try {
+      const result = await sendTemplateEmail('sender-confirmation', row.email, {
+        templateData: { senderName: row.name || undefined, email: row.email, confirmUrl },
+        idempotencyKey: `sender-confirmation-${row.id}-${row.confirm_token}`,
+      })
+      sent = result.sent
+      reason = result.sent ? null : 'recipient_suppressed'
+    } catch (err) {
+      sent = false
+      reason = err instanceof Error ? err.message : 'send_failed'
+    }
+    return { row, sent, reason, confirmUrl }
   })
 
 export const resendSenderConfirmation = createServerFn({ method: 'POST' })
@@ -59,11 +68,20 @@ export const resendSenderConfirmation = createServerFn({ method: 'POST' })
     const { sendTemplateEmail } = await import('@/lib/email-templates/send-email')
     const origin = new URL(getRequest().url).origin
     const confirmUrl = `${origin}/confirm-sender?token=${row.confirm_token}`
-    const result = await sendTemplateEmail('sender-confirmation', row.email, {
-      templateData: { senderName: row.name || undefined, email: row.email, confirmUrl },
-      idempotencyKey: `sender-confirmation-resend-${row.id}-${Date.now()}`,
-    })
-    return { sent: result.sent }
+    let sent = false
+    let reason: string | null = null
+    try {
+      const result = await sendTemplateEmail('sender-confirmation', row.email, {
+        templateData: { senderName: row.name || undefined, email: row.email, confirmUrl },
+        idempotencyKey: `sender-confirmation-resend-${row.id}-${Date.now()}`,
+      })
+      sent = result.sent
+      reason = result.sent ? null : 'recipient_suppressed'
+    } catch (err) {
+      sent = false
+      reason = err instanceof Error ? err.message : 'send_failed'
+    }
+    return { sent, reason, confirmUrl }
   })
 
 export const deleteSenderEmail = createServerFn({ method: 'POST' })
