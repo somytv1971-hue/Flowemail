@@ -12,6 +12,10 @@ import {
   Mail,
   Upload,
   ArrowUpDown,
+  UserPlus,
+  FileText,
+  RefreshCw,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
