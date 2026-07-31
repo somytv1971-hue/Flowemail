@@ -114,6 +114,8 @@ type BuilderDocument = {
   version: 1;
   blocks: Block[];
   style: MessageStyle;
+  header?: HeaderSettings;
+  footer?: FooterSettings;
 };
 
 const DEFAULT_STYLE: MessageStyle = {
@@ -256,6 +258,8 @@ function BuilderPage() {
     if (document) {
       setBlocks(document.blocks);
       setStyle({ ...DEFAULT_STYLE, ...document.style });
+      if (document.header) setHeader(document.header);
+      if (document.footer) setFooter(document.footer);
     }
     setReady(true);
   }, [msg, ready]);
@@ -316,7 +320,7 @@ function BuilderPage() {
   };
 
   const documentValue = () =>
-    `FLOWMAIL_BUILDER:${JSON.stringify({ version: 1, blocks, style } satisfies BuilderDocument)}`;
+    `FLOWMAIL_BUILDER:${JSON.stringify({ version: 1, blocks, style, header, footer } satisfies BuilderDocument)}`;
 
   const save = useMutation({
     mutationFn: () =>
@@ -754,9 +758,21 @@ function MessageStylePanel({
                   <p className="mt-1">Size:</p>
                 </div>
               </div>
-              <button type="button" className="text-sm font-medium text-primary hover:underline">
+              <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
                 Add image
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => typeof reader.result === "string" && set("imageUrl", reader.result);
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </label>
 
               <div>
                 <Label className="text-sm">Embed from a URL</Label>
@@ -767,7 +783,12 @@ function MessageStylePanel({
                     placeholder="Enter image URL"
                     className="rounded-r-none"
                   />
-                  <Button variant="outline" className="rounded-l-none border-l-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-l-none border-l-0"
+                    onClick={() => style.imageUrl ? toast.success("Background image applied") : toast.error("Enter an image URL")}
+                  >
                     Go
                   </Button>
                 </div>
