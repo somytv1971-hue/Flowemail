@@ -99,7 +99,6 @@ function Page() {
   const [listSearch, setListSearch] = useState("");
   const [contactSearch, setContactSearch] = useState("");
   const [sortAsc, setSortAsc] = useState(false);
-  const [showAllContacts, setShowAllContacts] = useState(false);
 
   const [openList, setOpenList] = useState(false);
   const [openContacts, setOpenContacts] = useState(false);
@@ -229,14 +228,16 @@ function Page() {
             <div className="mt-3 text-right">
               <button
                 className="text-sm font-medium text-primary hover:underline"
-                onClick={() => setShowAllContacts((v) => !v)}
+                onClick={() => setTab("Search")}
               >
-                {showAllContacts ? "Hide contacts" : `Show all contacts (${contacts.length})`}
+                {`Show all contacts (${contacts.length})`}
               </button>
             </div>
 
-            {!showAllContacts ? (
+
+            {(
               <div className="mt-4 overflow-hidden rounded-xl border">
+
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50 text-muted-foreground">
                     <tr>
@@ -315,7 +316,34 @@ function Page() {
                   </tbody>
                 </table>
               </div>
-            ) : (
+            )}
+          </TabsContent>
+
+          <TabsContent value="Search" className="m-0 p-6">
+            <div className="mx-auto max-w-2xl text-center text-sm text-muted-foreground">
+              {used >= limit ? (
+                <>
+                  You've reached the {limit}-contact limit. To add more,{" "}
+                  <span className="font-medium text-primary">upgrade your account</span>
+                </>
+              ) : (
+                <>
+                  {used} of {limit} contacts used on your plan.
+                </>
+              )}
+            </div>
+            <div className="mx-auto mt-3 max-w-2xl">
+              <div className="relative h-3 rounded-full bg-muted">
+                <div
+                  className="h-3 rounded-full bg-primary transition-all"
+                  style={{ width: `${Math.max(pct, 2)}%` }}
+                />
+                <span className="absolute -top-1 right-0 translate-x-1/4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                  {used}
+                </span>
+              </div>
+            </div>
+            <div className="mt-8">
               <ContactsTable
                 contacts={contacts}
                 lists={lists}
@@ -324,19 +352,9 @@ function Page() {
                 onDelete={(id) => delContact.mutate(id)}
                 onStatus={(id, status) => setStatus.mutate({ id, status })}
               />
-            )}
+            </div>
           </TabsContent>
 
-          <TabsContent value="Search" className="m-0 p-6">
-            <ContactsTable
-              contacts={contacts}
-              lists={lists}
-              search={contactSearch}
-              onSearch={setContactSearch}
-              onDelete={(id) => delContact.mutate(id)}
-              onStatus={(id, status) => setStatus.mutate({ id, status })}
-            />
-          </TabsContent>
 
           <TabsContent value="Reports" className="m-0 p-6">
             <div className="grid gap-4 sm:grid-cols-3">
@@ -435,59 +453,246 @@ function ContactsTable({
   onDelete: (id: string) => void;
   onStatus: (id: string, status: "subscribed" | "unsubscribed" | "bounced") => void;
 }) {
+  const [sortKey, setSortKey] = useState<"email" | "name" | "created_at">("created_at");
+  const [asc, setAsc] = useState(false);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [advanced, setAdvanced] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [listFilter, setListFilter] = useState<string>("all");
+
   const q = search.toLowerCase();
-  const rows = contacts.filter(
-    (c) =>
-      c.email.toLowerCase().includes(q) ||
-      `${c.first_name} ${c.last_name}`.toLowerCase().includes(q),
-  );
+  const filtered = useMemo(() => {
+    const rows = contacts.filter((c) => {
+      const matches =
+        c.email.toLowerCase().includes(q) ||
+        `${c.first_name} ${c.last_name}`.toLowerCase().includes(q);
+      const st = statusFilter === "all" || c.status === statusFilter;
+      const li = listFilter === "all" || c.list_id === listFilter;
+      return matches && st && li;
+    });
+    return [...rows].sort((a, b) => {
+      const va =
+        sortKey === "email"
+          ? a.email
+          : sortKey === "name"
+            ? `${a.first_name} ${a.last_name}`.trim()
+            : a.created_at;
+      const vb =
+        sortKey === "email"
+          ? b.email
+          : sortKey === "name"
+            ? `${b.first_name} ${b.last_name}`.trim()
+            : b.created_at;
+      return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+  }, [contacts, q, statusFilter, listFilter, sortKey, asc]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / perPage));
+  const current = Math.min(page, pageCount);
+  const rows = filtered.slice((current - 1) * perPage, current * perPage);
+  const inactive = contacts.filter((c) => c.status !== "subscribed").length;
   const listName = (id: string | null) => lists.find((l) => l.id === id)?.name ?? "—";
+
+  const toggleSort = (key: "email" | "name" | "created_at") => {
+    if (sortKey === key) setAsc((v) => !v);
+    else {
+      setSortKey(key);
+      setAsc(true);
+    }
+  };
+
+  const allChecked = rows.length > 0 && rows.every((r) => selected.includes(r.id));
+  const toggleAll = () =>
+    setSelected(allChecked ? [] : Array.from(new Set([...selected, ...rows.map((r) => r.id)])));
+  const toggleOne = (id: string) =>
+    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+
+  const fmt = (v: string) =>
+    new Date(v).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+
+  const pages = Array.from({ length: pageCount }, (_, i) => i + 1).filter(
+    (p) => p <= 7 || p === pageCount,
+  );
 
   return (
     <div>
-      <div className="relative w-full max-w-xs">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-          placeholder="Search contacts by name or email"
-          className="rounded-full pl-9"
-        />
+      <div className="mx-auto w-full max-w-xl">
+        <div className="relative">
+          <Input
+            value={search}
+            onChange={(e) => {
+              onSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search contacts by name or email"
+            className="h-12 rounded-full pl-6 pr-12"
+          />
+          <Search className="absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        </div>
+        <div className="mt-3 text-center">
+          <button
+            className="text-sm font-medium text-primary hover:underline"
+            onClick={() => setAdvanced((v) => !v)}
+          >
+            Advanced search
+          </button>
+        </div>
       </div>
-      <div className="mt-4 overflow-hidden rounded-xl border">
-        <table className="w-full text-sm">
+
+      {advanced && (
+        <div className="mx-auto mt-4 grid w-full max-w-xl gap-3 rounded-xl border bg-muted/30 p-4 sm:grid-cols-2">
+          <div>
+            <Label className="text-xs">Status</Label>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm"
+            >
+              <option value="all">All statuses</option>
+              <option value="subscribed">Subscribed</option>
+              <option value="unsubscribed">Unsubscribed</option>
+              <option value="bounced">Bounced</option>
+            </select>
+          </div>
+          <div>
+            <Label className="text-xs">List</Label>
+            <select
+              value={listFilter}
+              onChange={(e) => {
+                setListFilter(e.target.value);
+                setPage(1);
+              }}
+              className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm"
+            >
+              <option value="all">All lists</option>
+              {lists.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-6 flex items-start justify-end">
+        <div className="text-right">
+          <div className="flex items-center justify-end gap-2">
+            <span className="text-sm text-muted-foreground">All contacts:</span>
+            <span className="text-2xl font-bold">{filtered.length}</span>
+          </div>
+          <div className="text-xs text-muted-foreground">{inactive} inactive</div>
+        </div>
+      </div>
+
+      {selected.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+          <span className="font-medium">{selected.length} selected</span>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              selected.forEach((id) => onStatus(id, "unsubscribed"));
+              setSelected([]);
+            }}
+          >
+            Unsubscribe
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => {
+              selected.forEach((id) => onDelete(id));
+              setSelected([]);
+            }}
+          >
+            Delete
+          </Button>
+        </div>
+      )}
+
+      <div className="mt-4 overflow-x-auto rounded-xl border">
+        <table className="w-full min-w-[900px] text-sm">
           <thead className="bg-muted/50 text-muted-foreground">
             <tr>
-              <th className="px-4 py-3 text-left font-medium">Email</th>
-              <th className="px-4 py-3 text-left font-medium">Name</th>
-              <th className="px-4 py-3 text-left font-medium">List</th>
-              <th className="px-4 py-3 text-left font-medium">Status</th>
+              <th className="w-10 px-4 py-3">
+                <input type="checkbox" checked={allChecked} onChange={toggleAll} />
+              </th>
+              <th className="px-4 py-3 text-left font-medium">
+                <button className="inline-flex items-center gap-1" onClick={() => toggleSort("email")}>
+                  Email address <ArrowUpDown className="h-3 w-3" />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-left font-medium">
+                <button className="inline-flex items-center gap-1" onClick={() => toggleSort("name")}>
+                  Name <ArrowUpDown className="h-3 w-3" />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-left font-medium">Autoresponder day</th>
+              <th className="px-4 py-3 text-left font-medium">
+                <button
+                  className="inline-flex items-center gap-1"
+                  onClick={() => toggleSort("created_at")}
+                >
+                  Subscribed on <ArrowUpDown className="h-3 w-3" />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-left font-medium">Updated on</th>
+              <th className="px-4 py-3 text-left font-medium">IP address</th>
+              <th className="px-4 py-3 text-left font-medium">Origin</th>
               <th className="w-10" />
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td className="px-4 py-10 text-center text-muted-foreground" colSpan={5}>
+                <td className="px-4 py-10 text-center text-muted-foreground" colSpan={9}>
                   No contacts found.
                 </td>
               </tr>
             )}
             {rows.map((c) => (
-              <tr key={c.id} className="border-t">
-                <td className="px-4 py-3 font-medium">
-                  <span className="inline-flex items-center gap-2">
+              <tr key={c.id} className="border-t align-top">
+                <td className="px-4 py-4">
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(c.id)}
+                    onChange={() => toggleOne(c.id)}
+                  />
+                </td>
+                <td className="px-4 py-4">
+                  <div className="inline-flex items-center gap-2 font-semibold">
                     <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                     {c.email}
-                  </span>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">{listName(c.list_id)}</div>
                 </td>
-                <td className="px-4 py-3">{`${c.first_name} ${c.last_name}`.trim() || "—"}</td>
-                <td className="px-4 py-3 text-muted-foreground">{listName(c.list_id)}</td>
-                <td className="px-4 py-3">
-                  <Badge variant={c.status === "subscribed" ? "default" : "secondary"}>
-                    {c.status}
-                  </Badge>
+                <td className="px-4 py-4">
+                  {`${c.first_name} ${c.last_name}`.trim() || (
+                    <span className="text-muted-foreground">n/a</span>
+                  )}
                 </td>
+                <td className="px-4 py-4">
+                  <div className="flex gap-1">
+                    {[0, 1, 2, 3].map((i) => (
+                      <span
+                        key={i}
+                        className={`h-1.5 w-6 rounded-full ${
+                          i < 2 ? "bg-primary" : "bg-muted"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </td>
+                <td className="px-4 py-4 font-medium">{fmt(c.created_at)}</td>
+                <td className="px-4 py-4 text-muted-foreground">n/a</td>
+                <td className="px-4 py-4 text-muted-foreground">n/a</td>
+                <td className="px-4 py-4 font-medium">List import</td>
                 <td className="px-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -502,10 +707,7 @@ function ContactsTable({
                       <DropdownMenuItem onClick={() => onStatus(c.id, "unsubscribed")}>
                         Mark unsubscribed
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => onDelete(c.id)}
-                      >
+                      <DropdownMenuItem className="text-destructive" onClick={() => onDelete(c.id)}>
                         <Trash2 className="mr-2 h-4 w-4" /> Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -516,9 +718,52 @@ function ContactsTable({
           </tbody>
         </table>
       </div>
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-1 items-center justify-center gap-2">
+          {pages.map((p, i) => (
+            <span key={p} className="flex items-center gap-2">
+              {i > 0 && p - pages[i - 1]! > 1 && <span className="text-muted-foreground">…</span>}
+              <button
+                onClick={() => setPage(p)}
+                className={`h-8 min-w-8 rounded-full px-2 text-sm ${
+                  p === current ? "border font-semibold shadow-sm" : "text-muted-foreground"
+                }`}
+              >
+                {p}
+              </button>
+            </span>
+          ))}
+          <button
+            onClick={() => setPage(Math.min(current + 1, pageCount))}
+            className="h-8 w-8 rounded-full border text-sm"
+            aria-label="Next page"
+          >
+            ›
+          </button>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          Show:
+          <select
+            value={perPage}
+            onChange={(e) => {
+              setPerPage(Number(e.target.value));
+              setPage(1);
+            }}
+            className="h-8 rounded-md border bg-background px-2 text-sm text-foreground"
+          >
+            {[10, 25, 50, 100].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
     </div>
   );
 }
+
 
 function CreateListDialog({
   open,
