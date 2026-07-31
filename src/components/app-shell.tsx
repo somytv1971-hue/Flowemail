@@ -209,3 +209,18 @@ function SubItem({
     </Link>
   );
 }
+
+function ProfileItem({
+  icon: Icon,
+  label,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+}) {
+  return (
+    <DropdownMenuItem className="cursor-pointer gap-2 py-2 text-sm font-medium">
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      {label}
+    </DropdownMenuItem>
+  );
+}
