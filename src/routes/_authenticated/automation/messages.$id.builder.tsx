@@ -140,7 +140,11 @@ function BlockPreview({ block }: { block: Block }) {
       return (
         <div className="flex h-32 items-center justify-center rounded bg-muted text-muted-foreground">
           {block.url ? (
-            <img src={block.url} alt={block.content || "Email content"} className="h-full w-full rounded object-cover" />
+            <img
+              src={block.url}
+              alt={block.content || "Email content"}
+              className="h-full w-full rounded object-cover"
+            />
           ) : (
             <ImageIcon className="h-6 w-6" />
           )}
