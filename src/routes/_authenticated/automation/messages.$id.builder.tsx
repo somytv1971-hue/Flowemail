@@ -216,6 +216,34 @@ function BuilderPage() {
   const [tab, setTab] = useState<"layout" | "style">("layout");
   const [dragOver, setDragOver] = useState(false);
   const [style, setStyle] = useState<MessageStyle>(DEFAULT_STYLE);
+  const [header, setHeader] = useState<HeaderSettings>({
+    showViewOnline: false,
+    mode: "logo",
+    imageUrl: "",
+    altText: "Logo",
+    alignment: "center",
+    width: 120,
+    height: 40,
+    padChangeIndividually: false,
+    padAll: 5,
+    backgroundColor: "#FFFFFF",
+    transparent: true,
+    visibility: "all",
+  });
+  const [footer, setFooter] = useState<FooterSettings>({
+    fontFamily: "Arial",
+    fontSize: "12",
+    textColor: "#000000",
+    bold: false,
+    italic: false,
+    underline: false,
+    alignment: "center",
+    linksColor: "#00BAFF",
+    backgroundColor: "#FFFFFF",
+    transparent: true,
+    padChangeIndividually: false,
+    padAll: 10,
+  });
   const [previewOpen, setPreviewOpen] = useState(false);
   const [history, setHistory] = useState<Block[][]>([]);
   const [future, setFuture] = useState<Block[][]>([]);
@@ -356,8 +384,26 @@ function BuilderPage() {
           style={{ backgroundColor: style.backgroundColor, backgroundImage: style.backgroundImageOn && style.imageUrl ? `url(${style.imageUrl})` : undefined }}
         >
           <div className="mx-auto" style={{ maxWidth: `${style.width}px` }}>
-            <div className="mx-auto mb-6 w-32 rounded border border-dashed bg-card py-2 text-center text-xs tracking-widest text-muted-foreground">
-              LOGO
+            <div
+              className="mb-6 rounded border border-dashed py-2 text-xs tracking-widest text-muted-foreground"
+              style={{
+                padding: `${header.padAll}px`,
+                backgroundColor: header.transparent ? "transparent" : header.backgroundColor,
+                textAlign: header.alignment,
+              }}
+            >
+              {header.mode === "online" ? (
+                <a href="#preview" className="text-primary underline">View this message online</a>
+              ) : header.imageUrl ? (
+                <img
+                  src={header.imageUrl}
+                  alt={header.altText}
+                  className="inline-block object-contain"
+                  style={{ width: `${header.width}px`, height: `${header.height}px` }}
+                />
+              ) : (
+                "LOGO"
+              )}
             </div>
 
             <div
@@ -438,12 +484,25 @@ function BuilderPage() {
               )}
             </div>
 
-            <footer className="mt-6 space-y-1 text-center text-[11px] text-muted-foreground">
+            <footer
+              className="mt-6 space-y-1 text-muted-foreground"
+              style={{
+                fontFamily: footer.fontFamily,
+                fontSize: `${footer.fontSize}px`,
+                color: footer.textColor,
+                fontWeight: footer.bold ? 700 : 400,
+                fontStyle: footer.italic ? "italic" : "normal",
+                textDecoration: footer.underline ? "underline" : "none",
+                textAlign: footer.alignment,
+                backgroundColor: footer.transparent ? "transparent" : footer.backgroundColor,
+                padding: `${footer.padAll}px`,
+              }}
+            >
               <p>{msg?.list_name || "Your company"}, 1700, Business street, City, Country</p>
               <p>
                 You can{" "}
-                <span className="text-primary underline">unsubscribe</span> or{" "}
-                <span className="text-primary underline">change your details</span> at any time.
+                <span className="underline" style={{ color: footer.linksColor }}>unsubscribe</span> or{" "}
+                <span className="underline" style={{ color: footer.linksColor }}>change your details</span> at any time.
               </p>
             </footer>
           </div>
@@ -558,7 +617,14 @@ function BuilderPage() {
               ))}
             </Accordion>
           ) : (
-            <MessageStylePanel style={style} setStyle={setStyle} />
+            <MessageStylePanel
+              style={style}
+              setStyle={setStyle}
+              header={header}
+              setHeader={setHeader}
+              footer={footer}
+              setFooter={setFooter}
+            />
           )}
         </aside>
       </div>
@@ -590,9 +656,17 @@ type MessageStyle = {
 function MessageStylePanel({
   style,
   setStyle,
+  header,
+  setHeader,
+  footer,
+  setFooter,
 }: {
   style: MessageStyle;
   setStyle: React.Dispatch<React.SetStateAction<MessageStyle>>;
+  header: HeaderSettings;
+  setHeader: React.Dispatch<React.SetStateAction<HeaderSettings>>;
+  footer: FooterSettings;
+  setFooter: React.Dispatch<React.SetStateAction<FooterSettings>>;
 }) {
   const set = <K extends keyof MessageStyle>(k: K, v: MessageStyle[K]) =>
     setStyle((s) => ({ ...s, [k]: v }));
@@ -724,14 +798,14 @@ function MessageStylePanel({
           </span>
         </AccordionTrigger>
         <AccordionContent className="px-3 pb-5">
-          <ThemePanel />
+          <ThemePanel onApply={(backgroundColor) => set("backgroundColor", backgroundColor)} />
         </AccordionContent>
       </AccordionItem>
 
       <AccordionItem value="header">
         <AccordionTrigger className="px-3 text-sm">Header</AccordionTrigger>
         <AccordionContent className="px-3 pb-5">
-          <HeaderPanel />
+          <HeaderPanel value={header} onChange={setHeader} />
         </AccordionContent>
       </AccordionItem>
 
@@ -739,7 +813,7 @@ function MessageStylePanel({
       <AccordionItem value="footer">
         <AccordionTrigger className="px-3 text-sm">Footer</AccordionTrigger>
         <AccordionContent className="px-3 pb-5">
-          <FooterPanel />
+          <FooterPanel value={footer} onChange={setFooter} />
         </AccordionContent>
       </AccordionItem>
 
@@ -810,21 +884,13 @@ function Stepper({
   );
 }
 
-function HeaderPanel() {
-  const [h, setH] = useState<HeaderSettings>({
-    showViewOnline: false,
-    mode: "logo",
-    imageUrl: "",
-    altText: "",
-    alignment: "center",
-    width: 120,
-    height: 40,
-    padChangeIndividually: false,
-    padAll: 5,
-    backgroundColor: "#FFFFFF",
-    transparent: true,
-    visibility: "all",
-  });
+function HeaderPanel({
+  value: h,
+  onChange: setH,
+}: {
+  value: HeaderSettings;
+  onChange: React.Dispatch<React.SetStateAction<HeaderSettings>>;
+}) {
   const set = <K extends keyof HeaderSettings>(k: K, v: HeaderSettings[K]) =>
     setH((s) => ({ ...s, [k]: v }));
 
@@ -879,9 +945,21 @@ function HeaderPanel() {
               <p className="mt-1">Size:</p>
             </div>
           </div>
-          <button type="button" className="text-sm font-medium text-primary hover:underline">
+          <label className="cursor-pointer text-sm font-medium text-primary hover:underline">
             Add image
-          </button>
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => typeof reader.result === "string" && set("imageUrl", reader.result);
+                reader.readAsDataURL(file);
+              }}
+            />
+          </label>
 
           <div>
             <Label className="text-sm">Embed from a URL</Label>
@@ -892,7 +970,7 @@ function HeaderPanel() {
                 placeholder="Enter image URL"
                 className="rounded-r-none"
               />
-              <Button variant="outline" className="rounded-l-none border-l-0">
+              <Button type="button" variant="outline" className="rounded-l-none border-l-0" onClick={() => h.imageUrl ? toast.success("Logo updated") : toast.error("Enter an image URL") }>
                 Go
               </Button>
             </div>
@@ -1051,21 +1129,13 @@ const FOOTER_FONTS = [
 ];
 const FOOTER_SIZES = ["10", "11", "12", "14", "16", "18", "20"];
 
-function FooterPanel() {
-  const [f, setF] = useState<FooterSettings>({
-    fontFamily: "Arial",
-    fontSize: "12",
-    textColor: "#000000",
-    bold: false,
-    italic: false,
-    underline: false,
-    alignment: "center",
-    linksColor: "#00BAFF",
-    backgroundColor: "#FFFFFF",
-    transparent: true,
-    padChangeIndividually: false,
-    padAll: 10,
-  });
+function FooterPanel({
+  value: f,
+  onChange: setF,
+}: {
+  value: FooterSettings;
+  onChange: React.Dispatch<React.SetStateAction<FooterSettings>>;
+}) {
   const set = <K extends keyof FooterSettings>(k: K, v: FooterSettings[K]) =>
     setF((s) => ({ ...s, [k]: v }));
 
@@ -1230,7 +1300,7 @@ function FooterPanel() {
 
 type BrandColor = { label: string; value: string; hint?: boolean };
 
-function ThemePanel() {
+function ThemePanel({ onApply }: { onApply: (backgroundColor: string) => void }) {
   const [creating, setCreating] = useState(false);
   const [section, setSection] = useState<"colors" | "typography">("colors");
   const [colors, setColors] = useState<BrandColor[]>([
@@ -1356,7 +1426,14 @@ function ThemePanel() {
         <Button variant="ghost" size="sm" onClick={() => setCreating(false)}>
           Cancel
         </Button>
-        <Button size="sm" className="rounded-full px-5" onClick={() => toast.success("Brand kit saved")}>
+        <Button
+          size="sm"
+          className="rounded-full px-5"
+          onClick={() => {
+            onApply(colors[0]?.value ?? "#FFFFFF");
+            toast.success("Brand kit saved and applied");
+          }}
+        >
           Save
         </Button>
       </div>
