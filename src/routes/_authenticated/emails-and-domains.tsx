@@ -335,36 +335,21 @@ function Page() {
                           </button>
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <span className="inline-flex items-center gap-1">
-                            {row.spf}
-                            {row.spf === "Added" ? (
-                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                            ) : null}
-                          </span>
+                          <StatusBadge ok={row.spf} okLabel="Added" badLabel="Missing" />
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <span className="inline-flex items-center gap-1">
-                            {row.dmarc}
-                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                          </span>
+                          <StatusBadge ok={row.dmarc} okLabel="Added" badLabel="Missing" />
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <span className="inline-flex items-center gap-1">
-                            <Badge
-                              className={
-                                row.dkim === "At risk"
-                                  ? "rounded-full bg-amber-500 text-white hover:bg-amber-500"
-                                  : "rounded-full bg-emerald-600 text-white hover:bg-emerald-600"
-                              }
-                            >
-                              {row.dkim}
-                            </Badge>
-                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                          </span>
+                          <StatusBadge
+                            ok={row.dkim}
+                            okLabel="DKIM-authenticated"
+                            badLabel="No DKIM authentication"
+                          />
                         </td>
                         <td className="py-4 pl-4 text-right">
                           <div className="inline-flex items-center gap-2">
-                            {row.dkim === "At risk" && (
+                            {!row.dkim && (
                               <button
                                 className="font-semibold text-foreground hover:text-primary"
                                 onClick={() => setAuthDomain(row.domain)}
@@ -372,6 +357,7 @@ function Page() {
                                 Learn more
                               </button>
                             )}
+
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
