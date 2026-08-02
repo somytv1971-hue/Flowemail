@@ -363,11 +363,15 @@ function Page() {
                           </span>
                         </td>
                         <td className="py-4 pl-4 text-right">
-                          {row.dkim === "At risk" ? (
-                            <button className="font-semibold text-foreground hover:text-primary">
-                              Learn more
-                            </button>
-                          ) : (
+                          <div className="inline-flex items-center gap-2">
+                            {row.dkim === "At risk" && (
+                              <button
+                                className="font-semibold text-foreground hover:text-primary"
+                                onClick={() => setAuthDomain(row.domain)}
+                              >
+                                Learn more
+                              </button>
+                            )}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
@@ -375,16 +379,17 @@ function Page() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => toggle(row.id)}>
-                                  {open ? "Hide addresses" : "Show addresses"}
+                                <DropdownMenuItem onClick={() => setAuthDomain(row.domain)}>
+                                  View TXT records
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setAddOpen(true)}>
-                                  Add email
+                                <DropdownMenuItem onClick={() => setAuthDomain(row.domain)}>
+                                  Authenticate
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
-                          )}
+                          </div>
                         </td>
+
                       </tr>
                       {open && (
                         <tr className="border-b bg-muted/40">
