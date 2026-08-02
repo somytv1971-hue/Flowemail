@@ -77,6 +77,83 @@ export type Database = {
         }
         Relationships: []
       }
+      autoresponders: {
+        Row: {
+          click_rate: number
+          created_at: string
+          cycle_day: number
+          days_of_week: Json
+          delivered: number
+          from_email: string
+          id: string
+          list_name: string
+          message_id: string | null
+          name: string
+          open_rate: number
+          reply_to: string
+          send_mode: string
+          send_time: string
+          status: string
+          subject: string
+          track_clicks: boolean
+          track_opens: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          click_rate?: number
+          created_at?: string
+          cycle_day?: number
+          days_of_week?: Json
+          delivered?: number
+          from_email?: string
+          id?: string
+          list_name?: string
+          message_id?: string | null
+          name?: string
+          open_rate?: number
+          reply_to?: string
+          send_mode?: string
+          send_time?: string
+          status?: string
+          subject?: string
+          track_clicks?: boolean
+          track_opens?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          click_rate?: number
+          created_at?: string
+          cycle_day?: number
+          days_of_week?: Json
+          delivered?: number
+          from_email?: string
+          id?: string
+          list_name?: string
+          message_id?: string | null
+          name?: string
+          open_rate?: number
+          reply_to?: string
+          send_mode?: string
+          send_time?: string
+          status?: string
+          subject?: string
+          track_clicks?: boolean
+          track_opens?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autoresponders_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "automation_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_lists: {
         Row: {
           created_at: string
