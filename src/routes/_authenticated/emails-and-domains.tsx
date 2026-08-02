@@ -29,7 +29,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
+import { checkDomainAuth } from "@/lib/domain-auth.functions";
 import {
   listSenderEmails,
   addSenderEmail,
@@ -70,9 +71,9 @@ type Address = {
 type DomainRow = {
   id: string;
   domain: string;
-  spf: "Added" | "Missing";
-  dmarc: "Added" | "Missing";
-  dkim: "DKIM-authenticated" | "At risk";
+  spf: boolean;
+  dmarc: boolean;
+  dkim: boolean;
   addresses: Address[];
 };
 
@@ -94,18 +95,40 @@ function Page() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["sender-emails"] });
 
+  const domains = useMemo(
+    () => [...new Set(senders.map((s) => s.email.split("@")[1]?.toLowerCase() ?? ""))].filter(Boolean),
+    [senders],
+  );
+
+  const authQueries = useQueries({
+    queries: domains.map((d) => ({
+      queryKey: ["domain-auth", d],
+      queryFn: () => checkDomainAuth({ data: { domain: d } }),
+      staleTime: 60_000,
+    })),
+  });
+
+  const authByDomain = useMemo(() => {
+    const m = new Map<string, { spf: boolean; dmarc: boolean; dkim: boolean }>();
+    domains.forEach((d, i) => {
+      const res = authQueries[i]?.data;
+      if (res) m.set(d, { spf: res.spf, dmarc: res.dmarc, dkim: res.dkim });
+    });
+    return m;
+  }, [domains, authQueries]);
+
   const rows: DomainRow[] = useMemo(() => {
     const map = new Map<string, DomainRow>();
     for (const s of senders) {
       const domain = s.email.split("@")[1]?.toLowerCase() ?? "";
-      const isFree = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com"].includes(domain);
       if (!map.has(domain)) {
+        const a = authByDomain.get(domain);
         map.set(domain, {
           id: domain,
           domain,
-          spf: isFree ? "Added" : "Missing",
-          dmarc: isFree ? "Added" : "Missing",
-          dkim: isFree ? "At risk" : "DKIM-authenticated",
+          spf: a?.spf ?? false,
+          dmarc: a?.dmarc ?? false,
+          dkim: a?.dkim ?? false,
           addresses: [],
         });
       }
@@ -118,7 +141,7 @@ function Page() {
       });
     }
     return [...map.values()];
-  }, [senders]);
+  }, [senders, authByDomain]);
 
   const addMutation = useMutation({
     mutationFn: (vars: { name: string; email: string }) =>
@@ -335,36 +358,21 @@ function Page() {
                           </button>
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <span className="inline-flex items-center gap-1">
-                            {row.spf}
-                            {row.spf === "Added" ? (
-                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                            ) : null}
-                          </span>
+                          <StatusBadge ok={row.spf} okLabel="Added" badLabel="Missing" />
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <span className="inline-flex items-center gap-1">
-                            {row.dmarc}
-                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                          </span>
+                          <StatusBadge ok={row.dmarc} okLabel="Added" badLabel="Missing" />
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <span className="inline-flex items-center gap-1">
-                            <Badge
-                              className={
-                                row.dkim === "At risk"
-                                  ? "rounded-full bg-amber-500 text-white hover:bg-amber-500"
-                                  : "rounded-full bg-emerald-600 text-white hover:bg-emerald-600"
-                              }
-                            >
-                              {row.dkim}
-                            </Badge>
-                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                          </span>
+                          <StatusBadge
+                            ok={row.dkim}
+                            okLabel="DKIM-authenticated"
+                            badLabel="No DKIM authentication"
+                          />
                         </td>
                         <td className="py-4 pl-4 text-right">
                           <div className="inline-flex items-center gap-2">
-                            {row.dkim === "At risk" && (
+                            {!row.dkim && (
                               <button
                                 className="font-semibold text-foreground hover:text-primary"
                                 onClick={() => setAuthDomain(row.domain)}
@@ -372,6 +380,7 @@ function Page() {
                                 Learn more
                               </button>
                             )}
+
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
@@ -517,6 +526,36 @@ function TabButton({
     </button>
   );
 }
+
+function StatusBadge({
+  ok,
+  okLabel,
+  badLabel,
+}: {
+  ok: boolean;
+  okLabel: string;
+  badLabel: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Badge
+        className={
+          ok
+            ? "rounded-full bg-emerald-600 text-white hover:bg-emerald-600"
+            : "rounded-full bg-amber-500 text-white hover:bg-amber-500"
+        }
+      >
+        {ok ? okLabel : badLabel}
+      </Badge>
+      {ok ? (
+        <Info className="h-3.5 w-3.5 text-muted-foreground" />
+      ) : (
+        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+      )}
+    </span>
+  );
+}
+
 
 function EmailDialog({
   open,
