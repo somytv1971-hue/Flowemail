@@ -486,6 +486,11 @@ function Page() {
           addEmail(name, email);
         }}
       />
+      <AuthenticateDomainDialog
+        open={authDomain !== null}
+        onOpenChange={(v) => !v && setAuthDomain(null)}
+        domain={authDomain ?? ""}
+      />
     </div>
   );
 }
