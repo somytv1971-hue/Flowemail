@@ -13,22 +13,23 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-function hashString(input: string) {
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0).toString(16).padStart(8, "0");
-}
+const DKIM_PUBLIC_KEY =
+  "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsDtodYYQum4xE3Lw2f" +
+  "bLneVWtcNUd4cag1nWjLiNVbQQsyPTufC8NoUE86fTmKoREiHpAqokITHZDQR1mW2OW3A38f+v8kY1G6" +
+  "ANViN0Gv4yc9h21HvJYQpywtrLnNo/q5kiYTyRGQjq2G89F5DsRTw6Rf/IVj/JqANKx2n1u9RzuNPb+m" +
+  "OXy+UKw8ejLFN0syVgXgFhLdfpKtNAHH4AxrIksQoDcxVyA9w0c4YDs+vaDwtH8Goh74jOuTi4/EnK54" +
+  "sMWe1heBcu8Y6pDezbkoqWWE9rxKOBSQReP4lmBvOQMd2o6QwU5xnzW386bjqGBhNIEotKobD81ObzNv" +
+  "rMFQIDAQAB;";
 
 export function dkimRecordsFor(domain: string) {
-  const id = hashString(domain);
+  const d = domain || "example.com";
   return {
-    identifier: `${id}._domainkey`,
-    key: `k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC${id}${hashString(id + domain)}IDAQAB`,
-    dmarc: "v=DMARC1; p=none; rua=mailto:dmarc@" + domain,
-    spf: "v=spf1 include:_spf." + domain + " ~all",
+    identifier: `default._domainkey.${d}`,
+    key: DKIM_PUBLIC_KEY,
+    dmarcHost: `_dmarc.${d}`,
+    dmarc: `v=DMARC1; p=none; rua=mailto:postmaster@${d}`,
+    spfHost: d,
+    spf: "v=spf1 include:spf.maildns.net ~all",
   };
 }
 
