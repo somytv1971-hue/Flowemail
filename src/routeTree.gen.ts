@@ -17,7 +17,6 @@ import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedEmailsAndDomainsRouteImport } from './routes/_authenticated/emails-and-domains'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated/contacts'
-import { Route as AuthenticatedAutoresponderRouteImport } from './routes/_authenticated/autoresponder'
 import { Route as AuthenticatedAutomationIndexRouteImport } from './routes/_authenticated/automation/index'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as AuthenticatedAutomationWorkflowsNewRouteImport } from './routes/_authenticated/automation/workflows.new'
@@ -66,12 +65,6 @@ const AuthenticatedContactsRoute = AuthenticatedContactsRouteImport.update({
   path: '/contacts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAutoresponderRoute =
-  AuthenticatedAutoresponderRouteImport.update({
-    id: '/autoresponder',
-    path: '/autoresponder',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedAutomationIndexRoute =
   AuthenticatedAutomationIndexRouteImport.update({
     id: '/automation/',
@@ -119,7 +112,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/confirm-sender': typeof ConfirmSenderRoute
-  '/autoresponder': typeof AuthenticatedAutoresponderRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/emails-and-domains': typeof AuthenticatedEmailsAndDomainsRoute
@@ -136,7 +128,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/confirm-sender': typeof ConfirmSenderRoute
-  '/autoresponder': typeof AuthenticatedAutoresponderRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/emails-and-domains': typeof AuthenticatedEmailsAndDomainsRoute
@@ -155,7 +146,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/confirm-sender': typeof ConfirmSenderRoute
-  '/_authenticated/autoresponder': typeof AuthenticatedAutoresponderRoute
   '/_authenticated/contacts': typeof AuthenticatedContactsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/emails-and-domains': typeof AuthenticatedEmailsAndDomainsRoute
@@ -174,7 +164,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/confirm-sender'
-    | '/autoresponder'
     | '/contacts'
     | '/dashboard'
     | '/emails-and-domains'
@@ -191,7 +180,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/confirm-sender'
-    | '/autoresponder'
     | '/contacts'
     | '/dashboard'
     | '/emails-and-domains'
@@ -209,7 +197,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/confirm-sender'
-    | '/_authenticated/autoresponder'
     | '/_authenticated/contacts'
     | '/_authenticated/dashboard'
     | '/_authenticated/emails-and-domains'
@@ -289,13 +276,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContactsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/autoresponder': {
-      id: '/_authenticated/autoresponder'
-      path: '/autoresponder'
-      fullPath: '/autoresponder'
-      preLoaderRoute: typeof AuthenticatedAutoresponderRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/automation/': {
       id: '/_authenticated/automation/'
       path: '/automation'
@@ -349,7 +329,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAutoresponderRoute: typeof AuthenticatedAutoresponderRoute
   AuthenticatedContactsRoute: typeof AuthenticatedContactsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmailsAndDomainsRoute: typeof AuthenticatedEmailsAndDomainsRoute
@@ -363,7 +342,6 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAutoresponderRoute: AuthenticatedAutoresponderRoute,
   AuthenticatedContactsRoute: AuthenticatedContactsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmailsAndDomainsRoute: AuthenticatedEmailsAndDomainsRoute,
