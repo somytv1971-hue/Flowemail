@@ -17,6 +17,7 @@ import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedEmailsAndDomainsRouteImport } from './routes/_authenticated/emails-and-domains'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated/contacts'
+import { Route as AuthenticatedAutoresponderIndexRouteImport } from './routes/_authenticated/autoresponder/index'
 import { Route as AuthenticatedAutomationIndexRouteImport } from './routes/_authenticated/automation/index'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as AuthenticatedAutomationWorkflowsNewRouteImport } from './routes/_authenticated/automation/workflows.new'
@@ -65,6 +66,12 @@ const AuthenticatedContactsRoute = AuthenticatedContactsRouteImport.update({
   path: '/contacts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAutoresponderIndexRoute =
+  AuthenticatedAutoresponderIndexRouteImport.update({
+    id: '/autoresponder/',
+    path: '/autoresponder/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAutomationIndexRoute =
   AuthenticatedAutomationIndexRouteImport.update({
     id: '/automation/',
@@ -117,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/emails-and-domains': typeof AuthenticatedEmailsAndDomainsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/automation/': typeof AuthenticatedAutomationIndexRoute
+  '/autoresponder/': typeof AuthenticatedAutoresponderIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -133,6 +141,7 @@ export interface FileRoutesByTo {
   '/emails-and-domains': typeof AuthenticatedEmailsAndDomainsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/automation': typeof AuthenticatedAutomationIndexRoute
+  '/autoresponder': typeof AuthenticatedAutoresponderIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -151,6 +160,7 @@ export interface FileRoutesById {
   '/_authenticated/emails-and-domains': typeof AuthenticatedEmailsAndDomainsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/automation/': typeof AuthenticatedAutomationIndexRoute
+  '/_authenticated/autoresponder/': typeof AuthenticatedAutoresponderIndexRoute
   '/_authenticated/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/_authenticated/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/emails-and-domains'
     | '/reports'
     | '/automation/'
+    | '/autoresponder/'
     | '/automation/workflows/$id'
     | '/automation/workflows/new'
     | '/lovable/email/transactional/preview'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/emails-and-domains'
     | '/reports'
     | '/automation'
+    | '/autoresponder'
     | '/automation/workflows/$id'
     | '/automation/workflows/new'
     | '/lovable/email/transactional/preview'
@@ -202,6 +214,7 @@ export interface FileRouteTypes {
     | '/_authenticated/emails-and-domains'
     | '/_authenticated/reports'
     | '/_authenticated/automation/'
+    | '/_authenticated/autoresponder/'
     | '/_authenticated/automation/workflows/$id'
     | '/_authenticated/automation/workflows/new'
     | '/lovable/email/transactional/preview'
@@ -276,6 +289,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContactsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/autoresponder/': {
+      id: '/_authenticated/autoresponder/'
+      path: '/autoresponder'
+      fullPath: '/autoresponder/'
+      preLoaderRoute: typeof AuthenticatedAutoresponderIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/automation/': {
       id: '/_authenticated/automation/'
       path: '/automation'
@@ -334,6 +354,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEmailsAndDomainsRoute: typeof AuthenticatedEmailsAndDomainsRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedAutomationIndexRoute: typeof AuthenticatedAutomationIndexRoute
+  AuthenticatedAutoresponderIndexRoute: typeof AuthenticatedAutoresponderIndexRoute
   AuthenticatedAutomationWorkflowsIdRoute: typeof AuthenticatedAutomationWorkflowsIdRoute
   AuthenticatedAutomationWorkflowsNewRoute: typeof AuthenticatedAutomationWorkflowsNewRoute
   AuthenticatedAutomationMessagesIdBuilderRoute: typeof AuthenticatedAutomationMessagesIdBuilderRoute
@@ -347,6 +368,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEmailsAndDomainsRoute: AuthenticatedEmailsAndDomainsRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedAutomationIndexRoute: AuthenticatedAutomationIndexRoute,
+  AuthenticatedAutoresponderIndexRoute: AuthenticatedAutoresponderIndexRoute,
   AuthenticatedAutomationWorkflowsIdRoute:
     AuthenticatedAutomationWorkflowsIdRoute,
   AuthenticatedAutomationWorkflowsNewRoute:
