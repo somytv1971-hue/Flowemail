@@ -37,6 +37,7 @@ import {
   deleteSenderEmail,
   setDefaultSenderEmail,
 } from "@/lib/sender-emails.functions";
+import { AuthenticateDomainDialog } from "@/components/authenticate-domain-dialog";
 
 
 
