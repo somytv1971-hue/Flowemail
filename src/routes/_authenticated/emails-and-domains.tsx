@@ -29,7 +29,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
+import { checkDomainAuth } from "@/lib/domain-auth.functions";
 import {
   listSenderEmails,
   addSenderEmail,
@@ -70,9 +71,9 @@ type Address = {
 type DomainRow = {
   id: string;
   domain: string;
-  spf: "Added" | "Missing";
-  dmarc: "Added" | "Missing";
-  dkim: "DKIM-authenticated" | "At risk";
+  spf: boolean;
+  dmarc: boolean;
+  dkim: boolean;
   addresses: Address[];
 };
 
@@ -94,18 +95,40 @@ function Page() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["sender-emails"] });
 
+  const domains = useMemo(
+    () => [...new Set(senders.map((s) => s.email.split("@")[1]?.toLowerCase() ?? ""))].filter(Boolean),
+    [senders],
+  );
+
+  const authQueries = useQueries({
+    queries: domains.map((d) => ({
+      queryKey: ["domain-auth", d],
+      queryFn: () => checkDomainAuth({ data: { domain: d } }),
+      staleTime: 60_000,
+    })),
+  });
+
+  const authByDomain = useMemo(() => {
+    const m = new Map<string, { spf: boolean; dmarc: boolean; dkim: boolean }>();
+    domains.forEach((d, i) => {
+      const res = authQueries[i]?.data;
+      if (res) m.set(d, { spf: res.spf, dmarc: res.dmarc, dkim: res.dkim });
+    });
+    return m;
+  }, [domains, authQueries]);
+
   const rows: DomainRow[] = useMemo(() => {
     const map = new Map<string, DomainRow>();
     for (const s of senders) {
       const domain = s.email.split("@")[1]?.toLowerCase() ?? "";
-      const isFree = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com"].includes(domain);
       if (!map.has(domain)) {
+        const a = authByDomain.get(domain);
         map.set(domain, {
           id: domain,
           domain,
-          spf: isFree ? "Added" : "Missing",
-          dmarc: isFree ? "Added" : "Missing",
-          dkim: isFree ? "At risk" : "DKIM-authenticated",
+          spf: a?.spf ?? false,
+          dmarc: a?.dmarc ?? false,
+          dkim: a?.dkim ?? false,
           addresses: [],
         });
       }
@@ -118,7 +141,7 @@ function Page() {
       });
     }
     return [...map.values()];
-  }, [senders]);
+  }, [senders, authByDomain]);
 
   const addMutation = useMutation({
     mutationFn: (vars: { name: string; email: string }) =>
