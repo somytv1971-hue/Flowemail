@@ -527,6 +527,36 @@ function TabButton({
   );
 }
 
+function StatusBadge({
+  ok,
+  okLabel,
+  badLabel,
+}: {
+  ok: boolean;
+  okLabel: string;
+  badLabel: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Badge
+        className={
+          ok
+            ? "rounded-full bg-emerald-600 text-white hover:bg-emerald-600"
+            : "rounded-full bg-amber-500 text-white hover:bg-amber-500"
+        }
+      >
+        {ok ? okLabel : badLabel}
+      </Badge>
+      {ok ? (
+        <Info className="h-3.5 w-3.5 text-muted-foreground" />
+      ) : (
+        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+      )}
+    </span>
+  );
+}
+
+
 function EmailDialog({
   open,
   onOpenChange,
