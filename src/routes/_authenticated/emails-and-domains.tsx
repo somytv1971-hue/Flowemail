@@ -84,6 +84,8 @@ function Page() {
   const [expanded, setExpanded] = useState<string[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [aliasOpen, setAliasOpen] = useState(false);
+  const [authDomain, setAuthDomain] = useState<string | null>(null);
+
 
   const { data: senders = [] } = useQuery({
     queryKey: ["sender-emails"],
