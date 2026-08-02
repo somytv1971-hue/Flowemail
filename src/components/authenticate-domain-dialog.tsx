@@ -167,7 +167,7 @@ export function AuthenticateDomainDialog({
             A DMARC policy protects your domain from spoofing. This record is already in place.
           </p>
           <div className="mt-4 space-y-4">
-            <CopyField label="DMARC host" value={`_dmarc.${domain}`} />
+            <CopyField label="DMARC host" value={records.dmarcHost} />
             <CopyField label="DMARC value" value={records.dmarc} />
           </div>
         </Section>
@@ -177,7 +177,8 @@ export function AuthenticateDomainDialog({
             Create a TXT record at your domain's root and paste the value below.
           </p>
           <div className="mt-4 space-y-4">
-            <CopyField label="SPF host" value="@" />
+            <CopyField label="SPF host" value={records.spfHost} />
+
             <CopyField label="SPF value" value={records.spf} />
           </div>
         </Section>
