@@ -129,10 +129,8 @@ export function AuthenticateDomainDialog({
           </ol>
           <div className="mt-4 space-y-4">
             <CopyField label="DKIM identifier" value={records.identifier} />
-            <CopyField
-              label="DKIM key"
-              value={strongKey ? records.key + records.key.slice(-40) : records.key}
-            />
+            <CopyField label="DKIM key" value={records.key} />
+
             <div className="flex items-center gap-3">
               <Switch checked={strongKey} onCheckedChange={setStrongKey} id="strong-dkim" />
               <Label htmlFor="strong-dkim" className="font-normal">
