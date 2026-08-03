@@ -51,6 +51,7 @@ type WorkflowNode = {
   label?: string;
   x: number;
   y: number;
+  config?: SubscribeConfig;
 };
 
 function BuilderPage() {
@@ -250,7 +251,17 @@ function BuilderPage() {
               {tab === "add" ? (
                 <AddElementsPanel onAdd={addElement} />
               ) : (
-                <PropertiesPanel node={selected} workflowName={name} />
+                <PropertiesPanel
+                  node={selected}
+                  workflowName={name}
+                  onConfigChange={(patch) =>
+                    setNodes((ns) =>
+                      ns.map((n) =>
+                        n.id === selectedId ? { ...n, config: { ...(n.config ?? {}), ...patch } } : n,
+                      ),
+                    )
+                  }
+                />
               )}
             </div>
           </Tabs>
@@ -275,7 +286,7 @@ function NodeCard({
 }) {
   const isStart = node.type === "start";
   const label = isStart
-    ? `Subscribed via ${startLabel ?? "any list"}`
+    ? subscribeSummary(node.config ?? {}) || `Subscribed via ${startLabel ?? "any list"}`
     : node.label ?? node.element;
 
   return (
