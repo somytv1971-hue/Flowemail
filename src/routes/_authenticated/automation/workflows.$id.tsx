@@ -27,6 +27,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  WorkflowSubscribePanel,
+  subscribeSummary,
+  type SubscribeConfig,
+} from "@/components/workflow-subscribe-panel";
 
 export const Route = createFileRoute("/_authenticated/automation/workflows/$id")({
   head: () => ({
@@ -46,6 +51,7 @@ type WorkflowNode = {
   label?: string;
   x: number;
   y: number;
+  config?: SubscribeConfig;
 };
 
 function BuilderPage() {
@@ -245,7 +251,17 @@ function BuilderPage() {
               {tab === "add" ? (
                 <AddElementsPanel onAdd={addElement} />
               ) : (
-                <PropertiesPanel node={selected} workflowName={name} />
+                <PropertiesPanel
+                  node={selected}
+                  workflowName={name}
+                  onConfigChange={(patch) =>
+                    setNodes((ns) =>
+                      ns.map((n) =>
+                        n.id === selectedId ? { ...n, config: { ...(n.config ?? {}), ...patch } } : n,
+                      ),
+                    )
+                  }
+                />
               )}
             </div>
           </Tabs>
@@ -270,7 +286,7 @@ function NodeCard({
 }) {
   const isStart = node.type === "start";
   const label = isStart
-    ? `Subscribed via ${startLabel ?? "any list"}`
+    ? subscribeSummary(node.config ?? {}) || `Subscribed via ${startLabel ?? "any list"}`
     : node.label ?? node.element;
 
   return (
@@ -366,7 +382,15 @@ function AddElementsPanel({ onAdd }: { onAdd: (id: string, label: string) => voi
   );
 }
 
-function PropertiesPanel({ node, workflowName }: { node: WorkflowNode | null; workflowName: string }) {
+function PropertiesPanel({
+  node,
+  workflowName,
+  onConfigChange,
+}: {
+  node: WorkflowNode | null;
+  workflowName: string;
+  onConfigChange: (patch: SubscribeConfig) => void;
+}) {
   if (!node) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8 text-center text-sm text-muted-foreground">
@@ -375,6 +399,18 @@ function PropertiesPanel({ node, workflowName }: { node: WorkflowNode | null; wo
       </div>
     );
   }
+
+  const isSubscribe =
+    node.type === "start" ||
+    node.element === "subscribes" ||
+    node.element === "c_subscribed_via";
+
+  if (isSubscribe) {
+    return (
+      <WorkflowSubscribePanel config={node.config ?? {}} onChange={onConfigChange} />
+    );
+  }
+
   return (
     <div className="space-y-4 p-4">
       <div>
@@ -395,3 +431,4 @@ function PropertiesPanel({ node, workflowName }: { node: WorkflowNode | null; wo
     </div>
   );
 }
+
