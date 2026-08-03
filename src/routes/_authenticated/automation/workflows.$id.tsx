@@ -57,7 +57,7 @@ type WorkflowNode = {
   label?: string;
   x: number;
   y: number;
-  config?: SubscribeConfig;
+  config?: SubscribeConfig & SendMessageConfig;
 };
 
 function BuilderPage() {
