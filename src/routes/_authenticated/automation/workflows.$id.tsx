@@ -27,6 +27,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  WorkflowSubscribePanel,
+  subscribeSummary,
+  type SubscribeConfig,
+} from "@/components/workflow-subscribe-panel";
 
 export const Route = createFileRoute("/_authenticated/automation/workflows/$id")({
   head: () => ({
