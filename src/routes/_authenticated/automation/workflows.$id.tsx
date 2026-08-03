@@ -291,9 +291,13 @@ function NodeCard({
   onDelete?: () => void;
 }) {
   const isStart = node.type === "start";
+  const isSend = node.element === "a_send_message";
   const label = isStart
     ? subscribeSummary(node.config ?? {}) || `Subscribed via ${startLabel ?? "any list"}`
-    : node.label ?? node.element;
+    : isSend
+      ? sendMessageSummary(node.config ?? {})
+      : node.label ?? node.element;
+
 
   return (
     <div
