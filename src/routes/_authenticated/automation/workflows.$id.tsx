@@ -32,6 +32,12 @@ import {
   subscribeSummary,
   type SubscribeConfig,
 } from "@/components/workflow-subscribe-panel";
+import {
+  WorkflowSendMessagePanel,
+  sendMessageSummary,
+  type SendMessageConfig,
+} from "@/components/workflow-send-message-panel";
+
 
 export const Route = createFileRoute("/_authenticated/automation/workflows/$id")({
   head: () => ({
@@ -51,7 +57,7 @@ type WorkflowNode = {
   label?: string;
   x: number;
   y: number;
-  config?: SubscribeConfig;
+  config?: SubscribeConfig & SendMessageConfig;
 };
 
 function BuilderPage() {
@@ -285,9 +291,13 @@ function NodeCard({
   onDelete?: () => void;
 }) {
   const isStart = node.type === "start";
+  const isSend = node.element === "a_send_message";
   const label = isStart
     ? subscribeSummary(node.config ?? {}) || `Subscribed via ${startLabel ?? "any list"}`
-    : node.label ?? node.element;
+    : isSend
+      ? sendMessageSummary(node.config ?? {})
+      : node.label ?? node.element;
+
 
   return (
     <div
@@ -389,7 +399,7 @@ function PropertiesPanel({
 }: {
   node: WorkflowNode | null;
   workflowName: string;
-  onConfigChange: (patch: SubscribeConfig) => void;
+  onConfigChange: (patch: SubscribeConfig & SendMessageConfig) => void;
 }) {
   if (!node) {
     return (
@@ -398,6 +408,10 @@ function PropertiesPanel({
         <p>Select an element on the canvas to edit its properties.</p>
       </div>
     );
+  }
+
+  if (node.element === "a_send_message") {
+    return <WorkflowSendMessagePanel config={node.config ?? {}} onChange={onConfigChange} />;
   }
 
   const isSubscribe =
@@ -410,6 +424,7 @@ function PropertiesPanel({
       <WorkflowSubscribePanel config={node.config ?? {}} onChange={onConfigChange} />
     );
   }
+
 
   return (
     <div className="space-y-4 p-4">
