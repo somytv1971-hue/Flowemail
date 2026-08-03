@@ -32,6 +32,12 @@ import {
   subscribeSummary,
   type SubscribeConfig,
 } from "@/components/workflow-subscribe-panel";
+import {
+  WorkflowSendMessagePanel,
+  sendMessageSummary,
+  type SendMessageConfig,
+} from "@/components/workflow-send-message-panel";
+
 
 export const Route = createFileRoute("/_authenticated/automation/workflows/$id")({
   head: () => ({
