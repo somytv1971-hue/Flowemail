@@ -366,7 +366,15 @@ function AddElementsPanel({ onAdd }: { onAdd: (id: string, label: string) => voi
   );
 }
 
-function PropertiesPanel({ node, workflowName }: { node: WorkflowNode | null; workflowName: string }) {
+function PropertiesPanel({
+  node,
+  workflowName,
+  onConfigChange,
+}: {
+  node: WorkflowNode | null;
+  workflowName: string;
+  onConfigChange: (patch: SubscribeConfig) => void;
+}) {
   if (!node) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-8 text-center text-sm text-muted-foreground">
@@ -375,6 +383,18 @@ function PropertiesPanel({ node, workflowName }: { node: WorkflowNode | null; wo
       </div>
     );
   }
+
+  const isSubscribe =
+    node.type === "start" ||
+    node.element === "subscribes" ||
+    node.element === "c_subscribed_via";
+
+  if (isSubscribe) {
+    return (
+      <WorkflowSubscribePanel config={node.config ?? {}} onChange={onConfigChange} />
+    );
+  }
+
   return (
     <div className="space-y-4 p-4">
       <div>
@@ -395,3 +415,4 @@ function PropertiesPanel({ node, workflowName }: { node: WorkflowNode | null; wo
     </div>
   );
 }
+
