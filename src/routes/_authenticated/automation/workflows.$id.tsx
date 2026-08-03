@@ -399,7 +399,7 @@ function PropertiesPanel({
 }: {
   node: WorkflowNode | null;
   workflowName: string;
-  onConfigChange: (patch: SubscribeConfig) => void;
+  onConfigChange: (patch: SubscribeConfig & SendMessageConfig) => void;
 }) {
   if (!node) {
     return (
@@ -408,6 +408,10 @@ function PropertiesPanel({
         <p>Select an element on the canvas to edit its properties.</p>
       </div>
     );
+  }
+
+  if (node.element === "a_send_message") {
+    return <WorkflowSendMessagePanel config={node.config ?? {}} onChange={onConfigChange} />;
   }
 
   const isSubscribe =
@@ -420,6 +424,7 @@ function PropertiesPanel({
       <WorkflowSubscribePanel config={node.config ?? {}} onChange={onConfigChange} />
     );
   }
+
 
   return (
     <div className="space-y-4 p-4">
