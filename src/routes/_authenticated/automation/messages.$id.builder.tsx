@@ -347,9 +347,12 @@ function EditableText({
       suppressContentEditableWarning
       className={`min-h-[20px] whitespace-pre-wrap outline-none ${className ?? ""}`}
       style={style}
-      onBlur={(event) =>
-        onCommit(html ? event.currentTarget.innerHTML : event.currentTarget.innerText)
-      }
+      onBlur={(event) => {
+        const next = event.relatedTarget as HTMLElement | null;
+        // Clicking the formatting toolbar must not end editing.
+        if (next?.closest?.("[data-rte-toolbar]")) return;
+        onCommit(html ? event.currentTarget.innerHTML : event.currentTarget.innerText);
+      }}
       onKeyDown={(event) => {
         if (event.key === "Escape") event.currentTarget.blur();
         event.stopPropagation();

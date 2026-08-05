@@ -55,17 +55,51 @@ const COLORS = [
 
 const EMOJIS = ["😀", "😍", "🎉", "🔥", "✅", "⭐", "💡", "🚀", "❤️", "👍", "🎁", "📣"];
 
+let savedRange: Range | null = null;
+
+function isEditableNode(node: Node | null): boolean {
+  let el: HTMLElement | null =
+    node && node.nodeType === 3 ? node.parentElement : (node as HTMLElement | null);
+  while (el) {
+    if (el.isContentEditable) return true;
+    el = el.parentElement;
+  }
+  return false;
+}
+
+function restoreSelection() {
+  if (!savedRange) return;
+  const sel = window.getSelection();
+  sel?.removeAllRanges();
+  sel?.addRange(savedRange);
+  const container = savedRange.commonAncestorContainer;
+  const host: HTMLElement | null =
+    container.nodeType === 3 ? container.parentElement : (container as HTMLElement);
+  const editable = host?.closest?.("[contenteditable=true]") as HTMLElement | null;
+  editable?.focus();
+}
+
 function exec(command: string, value?: string) {
+  restoreSelection();
   document.execCommand(command, false, value);
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0 && isEditableNode(sel.anchorNode)) {
+    savedRange = sel.getRangeAt(0).cloneRange();
+  }
 }
 
 /** Formatting bar shown while a text block is being edited. */
 export function RichTextToolbar() {
+
   const [state, setState] = useState({ bold: false, italic: false, underline: false, strike: false });
 
   useEffect(() => {
     const sync = () => {
       try {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && isEditableNode(sel.anchorNode)) {
+          savedRange = sel.getRangeAt(0).cloneRange();
+        }
         setState({
           bold: document.queryCommandState("bold"),
           italic: document.queryCommandState("italic"),
@@ -79,6 +113,7 @@ export function RichTextToolbar() {
     document.addEventListener("selectionchange", sync);
     return () => document.removeEventListener("selectionchange", sync);
   }, []);
+
 
   const hold = (event: React.MouseEvent) => event.preventDefault();
 
@@ -111,7 +146,14 @@ export function RichTextToolbar() {
   const Divider = () => <span className="mx-1 h-5 w-px bg-border" />;
 
   return (
-    <div className="sticky top-0 z-20 mb-4 flex flex-wrap items-center gap-0.5 rounded-lg border bg-card px-2 py-1.5 shadow-sm">
+    <div
+      data-rte-toolbar
+      onMouseDown={(e) => {
+        // keep the caret inside the editable block when using the toolbar
+        if (!(e.target as HTMLElement).closest("select")) e.preventDefault();
+      }}
+      className="sticky top-0 z-20 mb-4 flex flex-wrap items-center gap-0.5 rounded-lg border bg-card px-2 py-1.5 shadow-sm"
+    >
       <select
         aria-label="Text style"
         onMouseDown={(e) => e.stopPropagation()}
@@ -208,7 +250,11 @@ export function RichTextToolbar() {
         title="Insert link"
         onClick={() => {
           const url = window.prompt("Link URL", "https://");
-          if (url) exec("createLink", url);
+          if (url) {
+            exec("createLink", url);
+            exec("foreColor", "#1a73e8");
+            exec("underline");
+          }
         }}
       >
         <Link2 className="h-4 w-4" />
@@ -231,7 +277,7 @@ export function RichTextToolbar() {
             <Smile className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="grid w-48 grid-cols-6 gap-1 p-2">
+        <DropdownMenuContent data-rte-toolbar align="end" className="grid w-48 grid-cols-6 gap-1 p-2">
           {EMOJIS.map((emoji) => (
             <button
               key={emoji}
@@ -273,7 +319,7 @@ function ColorPicker({
           {icon}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-auto p-2">
+      <DropdownMenuContent data-rte-toolbar align="start" className="w-auto p-2">
         <div className="grid grid-cols-6 gap-1">
           {COLORS.map((color) => (
             <button
