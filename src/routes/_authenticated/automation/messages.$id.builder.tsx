@@ -707,8 +707,9 @@ function BuilderPage() {
                         editable={editingKey === b.key}
                         onStartEdit={() => {
                           setSelected(b.key);
-                          setEditingKey(b.key);
+                          if (EDITABLE_TEXT.includes(b.type)) setEditingKey(b.key);
                         }}
+
                         onCommit={(content) => {
                           setEditingKey(null);
                           commitBlocks((current) =>
