@@ -23,8 +23,6 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  CheckCircle2,
-  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -37,7 +35,6 @@ import {
 } from "@/components/workflow-send-message-panel";
 import {
   WorkflowCanvas,
-  NODE_W,
   type WorkflowNode,
   type WorkflowEdge,
 } from "@/components/workflow-canvas";
