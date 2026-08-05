@@ -803,29 +803,175 @@ function BuilderPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              {selected && (
+              {selectedBlock && (
                 <AccordionItem value="selected">
-                  <AccordionTrigger className="px-3 text-sm">Selected block</AccordionTrigger>
+                  <AccordionTrigger className="px-3 text-sm capitalize">
+                    {selectedBlock.type} settings
+                  </AccordionTrigger>
                   <AccordionContent className="space-y-3 px-3">
-                    <Label htmlFor="block-content">Content</Label>
-                    <Textarea
-                      id="block-content"
-                      value={blocks.find((block) => block.key === selected)?.content ?? ""}
-                      onChange={(event) => updateSelected({ content: event.target.value })}
-                      placeholder="Edit block content"
-                    />
+                    {EDITABLE_TEXT.includes(selectedBlock.type) && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="block-content">Content</Label>
+                        <Textarea
+                          id="block-content"
+                          value={selectedBlock.content ?? defaultContent(selectedBlock.type)}
+                          onChange={(event) => updateSelected({ content: event.target.value })}
+                          placeholder="Edit block content"
+                        />
+                      </div>
+                    )}
+
                     {(["image", "video", "button"] as BlockType[]).includes(
-                      blocks.find((block) => block.key === selected)?.type ?? "text",
+                      selectedBlock.type,
                     ) && (
-                      <Input
-                        value={blocks.find((block) => block.key === selected)?.url ?? ""}
-                        onChange={(event) => updateSelected({ url: event.target.value })}
-                        placeholder="Destination or media URL"
-                      />
+                      <div className="space-y-1.5">
+                        <Label htmlFor="block-url">
+                          {selectedBlock.type === "button" ? "Link URL" : "Media URL"}
+                        </Label>
+                        <Input
+                          id="block-url"
+                          value={selectedBlock.url ?? ""}
+                          onChange={(event) => updateSelected({ url: event.target.value })}
+                          placeholder="https://…"
+                        />
+                        {selectedBlock.type === "image" && (
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = () =>
+                                updateSelected({ url: String(reader.result ?? "") });
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                        )}
+                        {selectedBlock.type === "image" && (
+                          <Input
+                            value={selectedBlock.content ?? ""}
+                            onChange={(event) => updateSelected({ content: event.target.value })}
+                            placeholder="Alt text"
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {selectedBlock.type === "countdown" && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="block-date">Ends at</Label>
+                        <Input
+                          id="block-date"
+                          type="datetime-local"
+                          value={selectedBlock.date ?? ""}
+                          onChange={(event) => updateSelected({ date: event.target.value })}
+                        />
+                      </div>
+                    )}
+
+                    {selectedBlock.type === "social" && (
+                      <div className="space-y-2">
+                        {SOCIAL_NETWORKS.map((network) => (
+                          <Input
+                            key={network}
+                            value={selectedBlock.socials?.[network] ?? ""}
+                            onChange={(event) =>
+                              updateSelected({
+                                socials: {
+                                  ...(selectedBlock.socials ?? {}),
+                                  [network]: event.target.value,
+                                },
+                              })
+                            }
+                            placeholder={`${network} URL`}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {(["spacer", "divider"] as BlockType[]).includes(selectedBlock.type) && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="block-height">Height (px)</Label>
+                        <Input
+                          id="block-height"
+                          type="number"
+                          min={1}
+                          value={selectedBlock.height ?? (selectedBlock.type === "spacer" ? 32 : 1)}
+                          onChange={(event) =>
+                            updateSelected({ height: Number(event.target.value) || 1 })
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {selectedBlock.type !== "spacer" && (
+                      <div className="space-y-1.5">
+                        <Label>Alignment</Label>
+                        <div className="flex gap-2">
+                          {(["left", "center", "right"] as const).map((a) => (
+                            <button
+                              key={a}
+                              type="button"
+                              onClick={() => updateSelected({ align: a })}
+                              className={`flex-1 rounded border px-2 py-1 text-xs capitalize transition ${
+                                (selectedBlock.align ?? "left") === a
+                                  ? "border-primary text-foreground"
+                                  : "text-muted-foreground hover:border-primary"
+                              }`}
+                            >
+                              {a}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {(["text", "button", "countdown", "divider"] as BlockType[]).includes(
+                      selectedBlock.type,
+                    ) && (
+                      <div className="flex gap-3">
+                        <div className="flex-1 space-y-1.5">
+                          <Label htmlFor="block-color">Text color</Label>
+                          <Input
+                            id="block-color"
+                            type="color"
+                            value={selectedBlock.color ?? "#111111"}
+                            onChange={(event) => updateSelected({ color: event.target.value })}
+                          />
+                        </div>
+                        {selectedBlock.type !== "divider" && (
+                          <div className="flex-1 space-y-1.5">
+                            <Label htmlFor="block-bg">Background</Label>
+                            <Input
+                              id="block-bg"
+                              type="color"
+                              value={selectedBlock.bgColor ?? "#ffffff"}
+                              onChange={(event) => updateSelected({ bgColor: event.target.value })}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {selectedBlock.type === "text" && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="block-size">Font size (px)</Label>
+                        <Input
+                          id="block-size"
+                          type="number"
+                          min={8}
+                          value={selectedBlock.fontSize ?? 14}
+                          onChange={(event) =>
+                            updateSelected({ fontSize: Number(event.target.value) || 14 })
+                          }
+                        />
+                      </div>
                     )}
                   </AccordionContent>
                 </AccordionItem>
               )}
+
 
               <AccordionItem value="basic">
                 <AccordionTrigger className="px-3 text-sm">
