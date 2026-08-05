@@ -495,6 +495,7 @@ function BuilderPage() {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [openSections, setOpenSections] = useState<string[]>(["sections"]);
 
   const [tab, setTab] = useState<"layout" | "style">("layout");
   const [dragOver, setDragOver] = useState(false);
