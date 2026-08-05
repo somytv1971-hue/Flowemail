@@ -177,6 +177,38 @@ function parseDocument(value: string | null | undefined): BuilderDocument | null
   }
 }
 
+function EditableText({
+  value,
+  onCommit,
+  className,
+  style,
+}: {
+  value: string;
+  onCommit: (next: string) => void;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      role="textbox"
+      tabIndex={0}
+      contentEditable
+      suppressContentEditableWarning
+      className={`min-h-[20px] whitespace-pre-wrap outline-none ${className ?? ""}`}
+      style={style}
+      onBlur={(event) => onCommit(event.currentTarget.innerText)}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") event.currentTarget.blur();
+        event.stopPropagation();
+      }}
+      ref={(node) => {
+        if (node && node.innerText !== value) node.innerText = value;
+        if (node && document.activeElement !== node) node.focus();
+      }}
+    />
+  );
+}
+
 function BlockPreview({
   block,
   editable,
@@ -189,108 +221,189 @@ function BlockPreview({
   onCommit?: (content: string) => void;
 }) {
   const { type } = block;
+  const countdown = useCountdown(block.date);
+  const align = block.align ?? (type === "button" || type === "countdown" || type === "social" ? "center" : "left");
+  const justify =
+    align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
+  const text = block.content ?? defaultContent(type);
+  const commit = (next: string) => onCommit?.(next);
+
   switch (type) {
     case "image":
       return (
-        <div className="flex h-32 items-center justify-center rounded bg-muted text-muted-foreground">
+        <div className={`flex ${justify}`}>
           {block.url ? (
             <img
               src={block.url}
               alt={block.content || "Email content"}
-              className="h-full w-full rounded object-cover"
+              className="max-w-full rounded object-cover"
             />
           ) : (
-            <ImageIcon className="h-6 w-6" />
+            <button
+              type="button"
+              onClick={() => onStartEdit?.()}
+              className="flex h-32 w-full items-center justify-center rounded bg-muted text-muted-foreground"
+            >
+              <ImageIcon className="h-6 w-6" />
+            </button>
           )}
         </div>
       );
     case "text":
-      if (editable) {
-        return (
-          <div
-            role="textbox"
-            tabIndex={0}
-            contentEditable
-            suppressContentEditableWarning
-            className="min-h-[24px] whitespace-pre-wrap rounded text-sm leading-relaxed text-foreground outline-none"
-            onBlur={(event) => onCommit?.(event.currentTarget.innerText)}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") event.currentTarget.blur();
-              event.stopPropagation();
-            }}
-            ref={(node) => {
-              if (node && node.innerText !== (block.content ?? "")) {
-                node.innerText = block.content ?? "";
-              }
-              if (node && document.activeElement !== node) node.focus();
-            }}
-
-          />
-        );
-      }
-      return (
+      return editable ? (
+        <EditableText
+          value={text}
+          onCommit={commit}
+          className="rounded text-sm leading-relaxed"
+          style={{ color: block.color, fontSize: block.fontSize, textAlign: align }}
+        />
+      ) : (
         <p
-          className="cursor-text text-sm leading-relaxed text-foreground"
+          className="cursor-text whitespace-pre-wrap text-sm leading-relaxed text-foreground"
+          style={{ color: block.color, fontSize: block.fontSize, textAlign: align }}
           onClick={() => onStartEdit?.()}
         >
-          {block.content || "Write your message here. Click to edit this text block."}
+          {text}
         </p>
       );
 
     case "button":
       return (
-        <div className="flex justify-center">
-          <a
-            href={block.url || "#preview"}
-            className="rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground"
-            onClick={(event) => event.preventDefault()}
-          >
-            {block.content || "Click here"}
-          </a>
+        <div className={`flex ${justify}`}>
+          {editable ? (
+            <EditableText
+              value={text}
+              onCommit={commit}
+              className="rounded-full px-6 py-2 text-sm font-medium"
+              style={{
+                backgroundColor: block.bgColor ?? "hsl(var(--primary))",
+                color: block.color ?? "hsl(var(--primary-foreground))",
+              }}
+            />
+          ) : (
+            <span
+              className="cursor-text rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground"
+              style={{ backgroundColor: block.bgColor, color: block.color }}
+              onClick={() => onStartEdit?.()}
+            >
+              {text}
+            </span>
+          )}
         </div>
       );
     case "video":
       return (
-        <div className="flex h-32 items-center justify-center rounded bg-muted text-muted-foreground">
-          <PlayCircle className="h-7 w-7" />
+        <div className={`flex ${justify}`}>
+          {block.url ? (
+            <a
+              href={block.url}
+              target="_blank"
+              rel="noreferrer"
+              className="relative block w-full"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex h-32 w-full items-center justify-center rounded bg-muted text-primary">
+                <PlayCircle className="h-8 w-8" />
+              </div>
+              <span className="mt-1 block truncate text-xs text-muted-foreground">{block.url}</span>
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onStartEdit?.()}
+              className="flex h-32 w-full items-center justify-center rounded bg-muted text-muted-foreground"
+            >
+              <PlayCircle className="h-7 w-7" />
+            </button>
+          )}
         </div>
       );
     case "spacer":
-      return <div className="h-8" />;
+      return <div style={{ height: block.height ?? 32 }} />;
     case "divider":
-      return <div className="h-px w-full bg-border" />;
-    case "webinar":
       return (
-        <div className="rounded border border-dashed p-4 text-center text-sm text-muted-foreground">
-          Webinar details block
+        <div
+          style={{ height: block.height ?? 1, backgroundColor: block.color ?? "hsl(var(--border))" }}
+          className="w-full"
+        />
+      );
+    case "webinar":
+      return editable ? (
+        <EditableText
+          value={text}
+          onCommit={commit}
+          className="rounded border border-dashed p-4 text-sm"
+          style={{ textAlign: align }}
+        />
+      ) : (
+        <div
+          className="cursor-text rounded border border-dashed p-4 text-sm text-muted-foreground"
+          style={{ textAlign: align }}
+          onClick={() => onStartEdit?.()}
+        >
+          {text}
         </div>
       );
     case "countdown":
       return (
-        <div className="flex justify-center gap-2">
-          {["02", "14", "37", "09"].map((n) => (
-            <span key={n} className="rounded bg-muted px-3 py-2 font-mono text-sm">
+        <div className={`flex gap-2 ${justify}`}>
+          {countdown.map((n, i) => (
+            <span
+              key={["d", "h", "m", "s"][i]}
+              className="rounded bg-muted px-3 py-2 text-center font-mono text-sm"
+              style={{ color: block.color, backgroundColor: block.bgColor }}
+            >
               {n}
+              <span className="block text-[9px] uppercase text-muted-foreground">
+                {["days", "hrs", "min", "sec"][i]}
+              </span>
             </span>
           ))}
         </div>
       );
     case "social":
       return (
-        <div className="flex justify-center gap-3 text-muted-foreground">
-          <Share2 className="h-5 w-5" />
-          <Share2 className="h-5 w-5" />
-          <Share2 className="h-5 w-5" />
+        <div className={`flex gap-3 text-muted-foreground ${justify}`}>
+          {SOCIAL_NETWORKS.filter((n) => block.socials?.[n]).length ? (
+            SOCIAL_NETWORKS.filter((n) => block.socials?.[n]).map((n) => (
+              <a
+                key={n}
+                href={block.socials?.[n]}
+                target="_blank"
+                rel="noreferrer"
+                title={n}
+                onClick={(event) => event.stopPropagation()}
+                className="hover:text-primary"
+              >
+                <Share2 className="h-5 w-5" />
+              </a>
+            ))
+          ) : (
+            <>
+              <Share2 className="h-5 w-5" />
+              <Share2 className="h-5 w-5" />
+              <Share2 className="h-5 w-5" />
+            </>
+          )}
         </div>
       );
     case "html":
-      return (
-        <pre className="overflow-x-auto rounded bg-muted p-3 font-mono text-xs text-muted-foreground">
-          {block.content || "<div>Custom HTML</div>"}
-        </pre>
+      return editable ? (
+        <EditableText
+          value={text}
+          onCommit={commit}
+          className="rounded bg-muted p-3 font-mono text-xs"
+        />
+      ) : (
+        <div
+          className="cursor-text"
+          onClick={() => onStartEdit?.()}
+          dangerouslySetInnerHTML={{ __html: text }}
+        />
       );
   }
 }
+
 
 function BuilderPage() {
   const { id } = Route.useParams();
