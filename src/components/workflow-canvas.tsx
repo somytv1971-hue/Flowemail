@@ -6,6 +6,10 @@ import {
   messageOpenedSummary,
   type MessageOpenedConfig,
 } from "@/components/workflow-message-opened-panel";
+import {
+  moveToListSummary,
+  type MoveToListConfig,
+} from "@/components/workflow-move-to-list-panel";
 import { ELEMENT_SECTIONS } from "@/lib/workflow-elements";
 
 export type WorkflowNode = {
@@ -16,7 +20,7 @@ export type WorkflowNode = {
   label?: string;
   x: number;
   y: number;
-  config?: SubscribeConfig & SendMessageConfig & MessageOpenedConfig;
+  config?: SubscribeConfig & SendMessageConfig & MessageOpenedConfig & MoveToListConfig;
 };
 
 export type WorkflowEdge = {
@@ -48,6 +52,7 @@ function nodeLabel(node: WorkflowNode, startLabel?: string) {
     return subscribeSummary(node.config ?? {}) || `Subscribed via ${startLabel ?? "any list"}`;
   if (node.element === "a_send_message") return sendMessageSummary(node.config ?? {});
   if (isConditionNode(node)) return messageOpenedSummary(node.config ?? {});
+  if (node.element === "a_move_list") return moveToListSummary(node.config ?? {});
   return node.label ?? node.element;
 }
 

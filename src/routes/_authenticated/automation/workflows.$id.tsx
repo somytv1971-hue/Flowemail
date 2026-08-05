@@ -42,6 +42,10 @@ import {
   WorkflowMessageOpenedPanel,
   type MessageOpenedConfig,
 } from "@/components/workflow-message-opened-panel";
+import {
+  WorkflowMoveToListPanel,
+  type MoveToListConfig,
+} from "@/components/workflow-move-to-list-panel";
 
 
 export const Route = createFileRoute("/_authenticated/automation/workflows/$id")({
@@ -331,7 +335,7 @@ function PropertiesPanel({
 }: {
   node: WorkflowNode | null;
   workflowName: string;
-  onConfigChange: (patch: SubscribeConfig & SendMessageConfig & MessageOpenedConfig) => void;
+  onConfigChange: (patch: SubscribeConfig & SendMessageConfig & MessageOpenedConfig & MoveToListConfig) => void;
 }) {
   if (!node) {
     return (
@@ -349,6 +353,11 @@ function PropertiesPanel({
   if (node.element === "opens_message" || node.element === "c_message_opened") {
     return <WorkflowMessageOpenedPanel config={node.config ?? {}} onChange={onConfigChange} />;
   }
+
+  if (node.element === "a_move_list" || node.element === "moved_to_list" || node.element === "c_moved_list") {
+    return <WorkflowMoveToListPanel config={node.config ?? {}} onChange={onConfigChange} />;
+  }
+
 
   const isSubscribe =
     node.type === "start" ||
