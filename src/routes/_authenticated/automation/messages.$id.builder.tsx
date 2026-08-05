@@ -4,6 +4,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getAutomationMessage, updateAutomationMessage } from "@/lib/automation-messages.functions";
 import { Button } from "@/components/ui/button";
+import { RichTextToolbar } from "@/components/rich-text-toolbar";
+
 import {
   Accordion,
   AccordionContent,
@@ -312,17 +314,20 @@ function EditableText({
   onCommit,
   className,
   style,
+  html,
 }: {
   value: string;
   onCommit: (next: string) => void;
   className?: string;
   style?: React.CSSProperties;
+  html?: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
-    node.innerText = value;
+    if (html) node.innerHTML = value;
+    else node.innerText = value;
     node.focus();
     const sel = window.getSelection();
     const range = document.createRange();
@@ -342,7 +347,9 @@ function EditableText({
       suppressContentEditableWarning
       className={`min-h-[20px] whitespace-pre-wrap outline-none ${className ?? ""}`}
       style={style}
-      onBlur={(event) => onCommit(event.currentTarget.innerText)}
+      onBlur={(event) =>
+        onCommit(html ? event.currentTarget.innerHTML : event.currentTarget.innerText)
+      }
       onKeyDown={(event) => {
         if (event.key === "Escape") event.currentTarget.blur();
         event.stopPropagation();
@@ -350,6 +357,9 @@ function EditableText({
     />
   );
 }
+
+const looksLikeHtml = (value: string) => /<[a-z][\s\S]*>/i.test(value);
+
 
 function BlockPreview({
   block,
@@ -396,10 +406,18 @@ function BlockPreview({
     case "text":
       return editable ? (
         <EditableText
+          html
           value={text}
           onCommit={commit}
-          className="rounded text-sm leading-relaxed"
+          className="rich-text rounded text-sm leading-relaxed"
           style={{ color: block.color, fontSize: block.fontSize, textAlign: align }}
+        />
+      ) : looksLikeHtml(text) ? (
+        <div
+          className="rich-text cursor-text text-sm leading-relaxed text-foreground"
+          style={{ color: block.color, fontSize: block.fontSize, textAlign: align }}
+          onClick={() => onStartEdit?.()}
+          dangerouslySetInnerHTML={{ __html: text }}
         />
       ) : (
         <p
@@ -410,6 +428,7 @@ function BlockPreview({
           {text}
         </p>
       );
+
 
     case "button":
       return (
@@ -769,7 +788,11 @@ function BuilderPage() {
               style.backgroundImageOn && style.imageUrl ? `url(${style.imageUrl})` : undefined,
           }}
         >
+          {editingKey && EDITABLE_TEXT.includes(
+            blocks.find((b) => b.key === editingKey)?.type ?? "spacer",
+          ) && <RichTextToolbar />}
           <div className="mx-auto" style={{ maxWidth: `${style.width}px` }}>
+
             {style.customCss && <style>{style.customCss}</style>}
             <div
               className="mb-6 rounded border border-dashed py-2 text-xs tracking-widest text-muted-foreground"
