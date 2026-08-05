@@ -17,6 +17,7 @@ import {
   MessageSquare,
   GitBranch,
   Users,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 
