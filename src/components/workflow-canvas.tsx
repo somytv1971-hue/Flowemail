@@ -14,6 +14,7 @@ import {
   removeContactSummary,
   type RemoveContactConfig,
 } from "@/components/workflow-remove-contact-panel";
+import { waitSummary, type WaitConfig } from "@/components/workflow-wait-panel";
 import { ELEMENT_SECTIONS } from "@/lib/workflow-elements";
 
 export type WorkflowNode = {
@@ -24,7 +25,7 @@ export type WorkflowNode = {
   label?: string;
   x: number;
   y: number;
-  config?: SubscribeConfig & SendMessageConfig & MessageOpenedConfig & MoveToListConfig & RemoveContactConfig;
+  config?: SubscribeConfig & SendMessageConfig & MessageOpenedConfig & MoveToListConfig & RemoveContactConfig & WaitConfig;
 };
 
 export type WorkflowEdge = {
