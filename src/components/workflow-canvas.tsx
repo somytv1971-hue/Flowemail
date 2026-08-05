@@ -6,6 +6,10 @@ import {
   messageOpenedSummary,
   type MessageOpenedConfig,
 } from "@/components/workflow-message-opened-panel";
+import {
+  moveToListSummary,
+  type MoveToListConfig,
+} from "@/components/workflow-move-to-list-panel";
 import { ELEMENT_SECTIONS } from "@/lib/workflow-elements";
 
 export type WorkflowNode = {
