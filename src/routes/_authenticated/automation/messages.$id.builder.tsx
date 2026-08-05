@@ -452,13 +452,13 @@ function BlockPreview({
               <span className="mt-1 block truncate text-xs text-muted-foreground">{block.url}</span>
             </a>
           ) : (
-            <button
-              type="button"
-              onClick={() => onStartEdit?.()}
-              className="flex h-32 w-full items-center justify-center rounded bg-muted text-muted-foreground"
-            >
-              <PlayCircle className="h-7 w-7" />
-            </button>
+            <MediaDropZone
+              accept="video/*"
+              icon={<PlayCircle className="h-7 w-7" />}
+              hint="Click to upload a video"
+              onUploaded={(url) => onSetUrl?.(url)}
+              onSelect={() => onStartEdit?.()}
+            />
           )}
         </div>
       );
