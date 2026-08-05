@@ -866,7 +866,12 @@ function BuilderPage() {
           </div>
 
           {tab === "layout" ? (
-            <Accordion type="multiple" defaultValue={["basic"]} className="px-2">
+            <Accordion
+              type="multiple"
+              value={openSections}
+              onValueChange={setOpenSections}
+              className="px-2"
+            >
               <AccordionItem value="sections">
                 <AccordionTrigger className="px-3 text-sm">Sections</AccordionTrigger>
                 <AccordionContent className="px-3">
