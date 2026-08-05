@@ -362,6 +362,11 @@ function PropertiesPanel({
     return <WorkflowMoveToListPanel config={node.config ?? {}} onChange={onConfigChange} />;
   }
 
+  if (node.element === "a_remove_contact" || node.element === "a_remove_list") {
+    return <WorkflowRemoveContactPanel config={node.config ?? {}} onChange={onConfigChange} />;
+  }
+
+
 
   const isSubscribe =
     node.type === "start" ||
