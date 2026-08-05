@@ -66,6 +66,7 @@ const updateSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   status: z.enum(["published", "paused"]).optional(),
   nodes: z.array(z.any()).optional(),
+  edges: z.array(z.any()).optional(),
 });
 
 export const updateWorkflow = createServerFn({ method: "POST" })
