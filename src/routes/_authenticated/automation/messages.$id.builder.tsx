@@ -694,7 +694,7 @@ function BuilderPage() {
                       }}
                       onClick={() => setSelected(b.key)}
                       onDoubleClick={() => {
-                        if (b.type === "text") setEditingKey(b.key);
+                        if (EDITABLE_TEXT.includes(b.type)) setEditingKey(b.key);
                       }}
                       className={`group relative rounded border p-4 transition ${
                         selected === b.key
