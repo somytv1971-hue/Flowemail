@@ -18,6 +18,8 @@ import {
   GitBranch,
   Users,
   Trash2,
+  BellRing,
+  Workflow,
   type LucideIcon,
 } from "lucide-react";
 
@@ -94,12 +96,15 @@ export const ELEMENT_SECTIONS: ElementSection[] = [
         label: "Messaging",
         items: [
           { id: "a_send_message", label: "Send message", icon: Send },
+          { id: "a_send_push", label: "Send push notification", icon: BellRing },
           { id: "a_send_sms", label: "Send SMS", icon: MessageSquare },
         ],
       },
       {
         label: "Contact",
         items: [
+          { id: "a_add_segments", label: "Add segments to workflow", icon: Users },
+          { id: "a_custom_field", label: "Custom field", icon: PencilRuler },
           { id: "a_add_tag", label: "Add tag", icon: Tag },
           { id: "a_remove_tag", label: "Remove tag", icon: Tag },
           { id: "a_copy_list", label: "Copy to list", icon: Copy },
@@ -112,11 +117,14 @@ export const ELEMENT_SECTIONS: ElementSection[] = [
         label: "Flow",
         items: [
           { id: "a_wait", label: "Wait", icon: Timer },
+          { id: "a_copy_workflow", label: "Copy to workflow", icon: GitBranch },
+          { id: "a_move_workflow", label: "Move to workflow", icon: Workflow },
           { id: "a_branch", label: "Branch", icon: GitBranch },
         ],
       },
     ],
   },
+
   {
     key: "filters",
     label: "Filters",
