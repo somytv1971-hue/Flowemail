@@ -312,17 +312,20 @@ function EditableText({
   onCommit,
   className,
   style,
+  html,
 }: {
   value: string;
   onCommit: (next: string) => void;
   className?: string;
   style?: React.CSSProperties;
+  html?: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
-    node.innerText = value;
+    if (html) node.innerHTML = value;
+    else node.innerText = value;
     node.focus();
     const sel = window.getSelection();
     const range = document.createRange();
@@ -342,7 +345,9 @@ function EditableText({
       suppressContentEditableWarning
       className={`min-h-[20px] whitespace-pre-wrap outline-none ${className ?? ""}`}
       style={style}
-      onBlur={(event) => onCommit(event.currentTarget.innerText)}
+      onBlur={(event) =>
+        onCommit(html ? event.currentTarget.innerHTML : event.currentTarget.innerText)
+      }
       onKeyDown={(event) => {
         if (event.key === "Escape") event.currentTarget.blur();
         event.stopPropagation();
@@ -350,6 +355,9 @@ function EditableText({
     />
   );
 }
+
+const looksLikeHtml = (value: string) => /<[a-z][\s\S]*>/i.test(value);
+
 
 function BlockPreview({
   block,
