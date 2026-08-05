@@ -4,6 +4,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getAutomationMessage, updateAutomationMessage } from "@/lib/automation-messages.functions";
 import { Button } from "@/components/ui/button";
+import { RichTextToolbar } from "@/components/rich-text-toolbar";
+
 import {
   Accordion,
   AccordionContent,
