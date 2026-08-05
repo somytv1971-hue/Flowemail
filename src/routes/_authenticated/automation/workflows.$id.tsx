@@ -180,50 +180,22 @@ function BuilderPage() {
 
       <div className="flex min-h-0 flex-1">
         {/* Canvas */}
-        <div className="relative flex-1 overflow-auto bg-[radial-gradient(circle,hsl(var(--border))_1px,transparent_1px)] [background-size:24px_24px]">
-          <div
-            className="relative mx-auto"
-            style={{
-              width: 900,
-              minHeight: "100%",
-              transform: `scale(${zoom})`,
-              transformOrigin: "top center",
+        <div className="relative flex min-w-0 flex-1">
+          <WorkflowCanvas
+            nodes={nodes}
+            edges={edges}
+            zoom={zoom}
+            selectedId={selectedId}
+            startLabel={startEl?.label}
+            onSelect={(nid) => {
+              setSelectedId(nid);
+              if (nid) setTab("props");
             }}
-          >
-            <div className="pt-8 text-center text-xs uppercase tracking-widest text-muted-foreground">
-              {workflow.channel === "web" ? "Web" : "Email"}
-            </div>
-
-            <div className="mt-6 flex flex-col items-center">
-              {nodes.map((node, i) => (
-                <div key={node.id} className="flex flex-col items-center">
-                  {i > 0 && <div className="my-1 h-8 w-px bg-border" />}
-                  <NodeCard
-                    node={node}
-                    startLabel={startEl?.label}
-                    selected={selectedId === node.id}
-                    onClick={() => {
-                      setSelectedId(node.id);
-                      setTab("props");
-                    }}
-                    onDelete={node.type === "start" ? undefined : () => deleteNode(node.id)}
-                  />
-                  {i === nodes.length - 1 && (
-                    <>
-                      <div className="my-1 h-8 w-px bg-border" />
-                      <button
-                        onClick={() => setTab("add")}
-                        className="grid h-10 w-10 place-items-center rounded-full border-2 border-dashed border-border bg-card text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-                        aria-label="Add element"
-                      >
-                        +
-                      </button>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+            onNodesChange={setNodes}
+            onEdgesChange={setEdges}
+            onDeleteNode={deleteNode}
+            onDropElement={(payload, x, y) => placeElement(payload.id, payload.label, x, y)}
+          />
 
           {/* Zoom controls */}
           <div className="pointer-events-auto absolute bottom-4 left-4 flex items-center gap-1 rounded-lg border bg-card p-1 shadow-sm">
@@ -238,7 +210,11 @@ function BuilderPage() {
               <Maximize2 className="h-4 w-4" />
             </Button>
           </div>
+          <div className="pointer-events-none absolute bottom-4 right-4 rounded-md border bg-card/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+            Drag elements onto the canvas · drag the bottom dot to connect · click a line to remove it
+          </div>
         </div>
+
 
         {/* Sidebar */}
         <aside className="flex w-[360px] flex-col border-l bg-card">
