@@ -23,20 +23,21 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  CheckCircle2,
-  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   WorkflowSubscribePanel,
-  subscribeSummary,
   type SubscribeConfig,
 } from "@/components/workflow-subscribe-panel";
 import {
   WorkflowSendMessagePanel,
-  sendMessageSummary,
   type SendMessageConfig,
 } from "@/components/workflow-send-message-panel";
+import {
+  WorkflowCanvas,
+  type WorkflowNode,
+  type WorkflowEdge,
+} from "@/components/workflow-canvas";
 
 
 export const Route = createFileRoute("/_authenticated/automation/workflows/$id")({
@@ -49,16 +50,6 @@ export const Route = createFileRoute("/_authenticated/automation/workflows/$id")
   component: BuilderPage,
 });
 
-type WorkflowNode = {
-  id: string;
-  type: string;
-  element: string;
-  channel?: string;
-  label?: string;
-  x: number;
-  y: number;
-  config?: SubscribeConfig & SendMessageConfig;
-};
 
 function BuilderPage() {
   const { id } = Route.useParams();
@@ -79,6 +70,7 @@ function BuilderPage() {
 
   const [name, setName] = useState("");
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
+  const [edges, setEdges] = useState<WorkflowEdge[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [tab, setTab] = useState<"add" | "props">("add");
@@ -87,11 +79,12 @@ function BuilderPage() {
     if (workflow) {
       setName(workflow.name);
       setNodes((workflow.nodes as WorkflowNode[]) ?? []);
+      setEdges(((workflow as any).edges as WorkflowEdge[]) ?? []);
     }
   }, [workflow]);
 
   const save = useMutation({
-    mutationFn: (patch: { name?: string; nodes?: WorkflowNode[] }) =>
+    mutationFn: (patch: { name?: string; nodes?: WorkflowNode[]; edges?: WorkflowEdge[] }) =>
       update({ data: { id, ...patch } }),
     onSuccess: () => {
       toast.success("Saved");
@@ -102,7 +95,7 @@ function BuilderPage() {
   });
 
   const publish = useMutation({
-    mutationFn: () => update({ data: { id, status: "published", nodes, name } }),
+    mutationFn: () => update({ data: { id, status: "published", nodes, edges, name } }),
     onSuccess: () => {
       toast.success("Workflow published");
       qc.invalidateQueries({ queryKey: ["workflows"] });
@@ -110,19 +103,28 @@ function BuilderPage() {
     },
   });
 
-  const addElement = (elementId: string, label: string) => {
+  const placeElement = (elementId: string, label: string, x?: number, y?: number) => {
     const last = nodes[nodes.length - 1];
-    const y = last ? last.y + 140 : 200;
-    setNodes([
-      ...nodes,
-      { id: crypto.randomUUID(), type: "step", element: elementId, label, x: 400, y },
-    ]);
+    const node: WorkflowNode = {
+      id: crypto.randomUUID(),
+      type: "step",
+      element: elementId,
+      label,
+      x: x ?? last?.x ?? 400,
+      y: y ?? (last ? last.y + 160 : 200),
+    };
+    setNodes([...nodes, node]);
+    if (last && x === undefined)
+      setEdges([...edges, { id: crypto.randomUUID(), source: last.id, target: node.id }]);
+    setSelectedId(node.id);
   };
 
   const deleteNode = (nodeId: string) => {
     setNodes(nodes.filter((n) => n.id !== nodeId || n.type === "start"));
+    setEdges(edges.filter((e) => e.source !== nodeId && e.target !== nodeId));
     if (selectedId === nodeId) setSelectedId(null);
   };
+
 
   if (isLoading || !workflow) {
     return <div className="p-10 text-center text-sm text-muted-foreground">Loading workflow…</div>;
@@ -162,7 +164,7 @@ function BuilderPage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => save.mutate({ name, nodes })}
+            onClick={() => save.mutate({ name, nodes, edges })}
             disabled={save.isPending}
           >
             <Save className="mr-1.5 h-4 w-4" /> Save
@@ -175,50 +177,22 @@ function BuilderPage() {
 
       <div className="flex min-h-0 flex-1">
         {/* Canvas */}
-        <div className="relative flex-1 overflow-auto bg-[radial-gradient(circle,hsl(var(--border))_1px,transparent_1px)] [background-size:24px_24px]">
-          <div
-            className="relative mx-auto"
-            style={{
-              width: 900,
-              minHeight: "100%",
-              transform: `scale(${zoom})`,
-              transformOrigin: "top center",
+        <div className="relative flex min-w-0 flex-1">
+          <WorkflowCanvas
+            nodes={nodes}
+            edges={edges}
+            zoom={zoom}
+            selectedId={selectedId}
+            startLabel={startEl?.label}
+            onSelect={(nid) => {
+              setSelectedId(nid);
+              if (nid) setTab("props");
             }}
-          >
-            <div className="pt-8 text-center text-xs uppercase tracking-widest text-muted-foreground">
-              {workflow.channel === "web" ? "Web" : "Email"}
-            </div>
-
-            <div className="mt-6 flex flex-col items-center">
-              {nodes.map((node, i) => (
-                <div key={node.id} className="flex flex-col items-center">
-                  {i > 0 && <div className="my-1 h-8 w-px bg-border" />}
-                  <NodeCard
-                    node={node}
-                    startLabel={startEl?.label}
-                    selected={selectedId === node.id}
-                    onClick={() => {
-                      setSelectedId(node.id);
-                      setTab("props");
-                    }}
-                    onDelete={node.type === "start" ? undefined : () => deleteNode(node.id)}
-                  />
-                  {i === nodes.length - 1 && (
-                    <>
-                      <div className="my-1 h-8 w-px bg-border" />
-                      <button
-                        onClick={() => setTab("add")}
-                        className="grid h-10 w-10 place-items-center rounded-full border-2 border-dashed border-border bg-card text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-                        aria-label="Add element"
-                      >
-                        +
-                      </button>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+            onNodesChange={setNodes}
+            onEdgesChange={setEdges}
+            onDeleteNode={deleteNode}
+            onDropElement={(payload, x, y) => placeElement(payload.id, payload.label, x, y)}
+          />
 
           {/* Zoom controls */}
           <div className="pointer-events-auto absolute bottom-4 left-4 flex items-center gap-1 rounded-lg border bg-card p-1 shadow-sm">
@@ -233,7 +207,11 @@ function BuilderPage() {
               <Maximize2 className="h-4 w-4" />
             </Button>
           </div>
+          <div className="pointer-events-none absolute bottom-4 right-4 rounded-md border bg-card/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+            Drag elements onto the canvas · drag the bottom dot to connect · click a line to remove it
+          </div>
         </div>
+
 
         {/* Sidebar */}
         <aside className="flex w-[360px] flex-col border-l bg-card">
@@ -255,7 +233,7 @@ function BuilderPage() {
 
             <div className="min-h-0 flex-1 overflow-y-auto">
               {tab === "add" ? (
-                <AddElementsPanel onAdd={addElement} />
+                <AddElementsPanel onAdd={(eid, label) => placeElement(eid, label)} />
               ) : (
                 <PropertiesPanel
                   node={selected}
@@ -277,65 +255,6 @@ function BuilderPage() {
   );
 }
 
-function NodeCard({
-  node,
-  startLabel,
-  selected,
-  onClick,
-  onDelete,
-}: {
-  node: WorkflowNode;
-  startLabel?: string;
-  selected: boolean;
-  onClick: () => void;
-  onDelete?: () => void;
-}) {
-  const isStart = node.type === "start";
-  const isSend = node.element === "a_send_message";
-  const label = isStart
-    ? subscribeSummary(node.config ?? {}) || `Subscribed via ${startLabel ?? "any list"}`
-    : isSend
-      ? sendMessageSummary(node.config ?? {})
-      : node.label ?? node.element;
-
-
-  return (
-    <div
-      onClick={onClick}
-      className={`group relative flex w-[360px] cursor-pointer items-center gap-3 rounded-xl border-2 bg-card p-3 shadow-sm transition-all ${
-        selected ? "border-primary shadow-md" : "border-border hover:border-primary/40"
-      }`}
-    >
-      <div
-        className={`grid h-10 w-10 shrink-0 rotate-45 place-items-center rounded-md ${
-          isStart ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"
-        }`}
-      >
-        <div className="-rotate-45 text-sm font-bold">{isStart ? "S" : "•"}</div>
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium">{label}</div>
-        {isStart && (
-          <div className="mt-0.5 flex items-center gap-1 text-xs text-success">
-            <CheckCircle2 className="h-3 w-3" /> Start element
-          </div>
-        )}
-      </div>
-      {onDelete && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="opacity-0 transition-opacity group-hover:opacity-100"
-          aria-label="Delete"
-        >
-          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-        </button>
-      )}
-    </div>
-  );
-}
 
 function AddElementsPanel({ onAdd }: { onAdd: (id: string, label: string) => void }) {
   const [channelTab, setChannelTab] = useState<"email" | "web">("email");
@@ -371,14 +290,23 @@ function AddElementsPanel({ onAdd }: { onAdd: (id: string, label: string) => voi
                       return (
                         <button
                           key={item.id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = "copy";
+                            e.dataTransfer.setData(
+                              "application/x-workflow-element",
+                              JSON.stringify({ id: item.id, label: item.label }),
+                            );
+                          }}
                           onClick={() => onAdd(item.id, item.label)}
-                          className="flex items-center gap-2 rounded-lg border bg-background p-2 text-left text-xs transition-colors hover:border-primary hover:bg-primary/5"
+                          className="flex cursor-grab items-center gap-2 rounded-lg border bg-background p-2 text-left text-xs transition-colors hover:border-primary hover:bg-primary/5 active:cursor-grabbing"
                         >
                           <div className="grid h-8 w-8 shrink-0 rotate-45 place-items-center rounded bg-primary/10 text-primary">
                             <Icon className="h-3.5 w-3.5 -rotate-45" />
                           </div>
                           <span className="line-clamp-2 font-medium leading-tight">{item.label}</span>
                         </button>
+
                       );
                     })}
                   </div>
