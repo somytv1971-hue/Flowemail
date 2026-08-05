@@ -52,6 +52,7 @@ function nodeLabel(node: WorkflowNode, startLabel?: string) {
     return subscribeSummary(node.config ?? {}) || `Subscribed via ${startLabel ?? "any list"}`;
   if (node.element === "a_send_message") return sendMessageSummary(node.config ?? {});
   if (isConditionNode(node)) return messageOpenedSummary(node.config ?? {});
+  if (node.element === "a_move_list") return moveToListSummary(node.config ?? {});
   return node.label ?? node.element;
 }
 
