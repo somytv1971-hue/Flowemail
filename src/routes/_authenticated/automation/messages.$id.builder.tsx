@@ -558,6 +558,14 @@ function BuilderPage() {
 
   const selectedBlock = blocks.find((block) => block.key === selected) ?? null;
 
+  useEffect(() => {
+    if (!selected) return;
+    setTab("layout");
+    setOpenSections((current) =>
+      current.includes("selected") ? current : [...current, "selected"],
+    );
+  }, [selected]);
+
   const addBlock = (type: BlockType, index?: number) => {
     const block: Block = {
       key: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
