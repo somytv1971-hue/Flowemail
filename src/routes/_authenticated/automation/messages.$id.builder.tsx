@@ -786,7 +786,11 @@ function BuilderPage() {
               style.backgroundImageOn && style.imageUrl ? `url(${style.imageUrl})` : undefined,
           }}
         >
+          {editingKey && EDITABLE_TEXT.includes(
+            blocks.find((b) => b.key === editingKey)?.type ?? "spacer",
+          ) && <RichTextToolbar />}
           <div className="mx-auto" style={{ maxWidth: `${style.width}px` }}>
+
             {style.customCss && <style>{style.customCss}</style>}
             <div
               className="mb-6 rounded border border-dashed py-2 text-xs tracking-widest text-muted-foreground"
