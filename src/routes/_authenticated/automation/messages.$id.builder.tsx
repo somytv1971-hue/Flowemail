@@ -504,7 +504,7 @@ function BuilderPage() {
                   {blocks.map((b, index) => (
                     <div
                       key={b.key}
-                      draggable
+                      draggable={editingKey !== b.key}
                       onDragStart={(event) => {
                         draggedKey.current = b.key;
                         event.dataTransfer.effectAllowed = "move";
@@ -527,13 +527,32 @@ function BuilderPage() {
                         draggedKey.current = null;
                       }}
                       onClick={() => setSelected(b.key)}
+                      onDoubleClick={() => {
+                        if (b.type === "text") setEditingKey(b.key);
+                      }}
                       className={`group relative rounded border p-4 transition ${
                         selected === b.key
                           ? "border-primary ring-1 ring-primary"
                           : "border-transparent hover:border-border"
                       }`}
                     >
-                      <BlockPreview block={b} />
+                      <BlockPreview
+                        block={b}
+                        editable={editingKey === b.key}
+                        onStartEdit={() => {
+                          setSelected(b.key);
+                          setEditingKey(b.key);
+                        }}
+                        onCommit={(content) => {
+                          setEditingKey(null);
+                          commitBlocks((current) =>
+                            current.map((item) =>
+                              item.key === b.key ? { ...item, content } : item,
+                            ),
+                          );
+                        }}
+                      />
+
                       <div className="absolute right-2 top-2 hidden items-center gap-1 group-hover:flex">
                         <GripVertical className="h-4 w-4 text-muted-foreground" />
                         <button
