@@ -277,7 +277,7 @@ export function RichTextToolbar() {
             <Smile className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="grid w-48 grid-cols-6 gap-1 p-2">
+        <DropdownMenuContent data-rte-toolbar align="end" className="grid w-48 grid-cols-6 gap-1 p-2">
           {EMOJIS.map((emoji) => (
             <button
               key={emoji}
@@ -319,7 +319,7 @@ function ColorPicker({
           {icon}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-auto p-2">
+      <DropdownMenuContent data-rte-toolbar align="start" className="w-auto p-2">
         <div className="grid grid-cols-6 gap-1">
           {COLORS.map((color) => (
             <button
