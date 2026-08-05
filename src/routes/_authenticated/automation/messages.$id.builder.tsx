@@ -1922,7 +1922,7 @@ function LogoUploader({
   });
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const readFile = (file?: File | null) => {
+  const readFile = async (file?: File | null) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Please choose an image file");
@@ -1932,22 +1932,22 @@ function LogoUploader({
       toast.error("Image must be smaller than 5 MB");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== "string") return;
+    try {
+      const url = await uploadMedia(file);
       const img = new Image();
       img.onload = () =>
         setMeta({
           resolution: `${img.naturalWidth} × ${img.naturalHeight} px`,
           size: `${(file.size / 1024).toFixed(0)} KB`,
         });
-      img.src = reader.result;
-      onChange(reader.result);
+      img.src = url;
+      onChange(url);
       toast.success("Logo uploaded");
-    };
-    reader.onerror = () => toast.error("Could not read the file");
-    reader.readAsDataURL(file);
+    } catch (error) {
+      toast.error((error as Error).message || "Upload failed");
+    }
   };
+
 
   return (
     <div className="space-y-3">
