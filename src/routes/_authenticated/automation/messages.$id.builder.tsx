@@ -50,6 +50,70 @@ import {
   Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+const MEDIA_BUCKET = "email-assets";
+
+async function uploadMedia(file: File) {
+  const { data: auth } = await supabase.auth.getUser();
+  const userId = auth.user?.id;
+  if (!userId) throw new Error("Please sign in again to upload files");
+  const safeName = file.name.replace(/[^\w.-]+/g, "-");
+  const path = `${userId}/${Date.now()}-${safeName}`;
+  const { error } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined, upsert: false });
+  if (error) throw new Error(error.message);
+  const { data, error: signError } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .createSignedUrl(path, 60 * 60 * 24 * 365);
+  if (signError || !data?.signedUrl) throw new Error(signError?.message || "Could not create URL");
+  return data.signedUrl;
+}
+
+function MediaUploader({
+  accept,
+  onUploaded,
+  label = "Upload file",
+}: {
+  accept: string;
+  onUploaded: (url: string) => void;
+  label?: string;
+}) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="space-y-1">
+      <Input
+        type="file"
+        accept={accept}
+        disabled={busy}
+        onChange={async (event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (!file) return;
+          if (file.size > 25 * 1024 * 1024) {
+            toast.error("File must be smaller than 25 MB");
+            return;
+          }
+          setBusy(true);
+          try {
+            const url = await uploadMedia(file);
+            onUploaded(url);
+            toast.success("Upload complete");
+          } catch (error) {
+            toast.error((error as Error).message || "Upload failed");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
+      <p className="text-[11px] text-muted-foreground">
+        {busy ? "Uploading…" : `${label} (max 25 MB)`}
+      </p>
+    </div>
+  );
+}
+
 
 export const Route = createFileRoute("/_authenticated/automation/messages/$id/builder")({
   head: () => ({
@@ -842,20 +906,13 @@ function BuilderPage() {
                           onChange={(event) => updateSelected({ url: event.target.value })}
                           placeholder="https://…"
                         />
-                        {selectedBlock.type === "image" && (
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={(event) => {
-                              const file = event.target.files?.[0];
-                              if (!file) return;
-                              const reader = new FileReader();
-                              reader.onload = () =>
-                                updateSelected({ url: String(reader.result ?? "") });
-                              reader.readAsDataURL(file);
-                            }}
+                        {(selectedBlock.type === "image" || selectedBlock.type === "video") && (
+                          <MediaUploader
+                            accept={selectedBlock.type === "image" ? "image/*" : "video/*"}
+                            onUploaded={(url) => updateSelected({ url })}
                           />
                         )}
+
                         {selectedBlock.type === "image" && (
                           <Input
                             value={selectedBlock.content ?? ""}
@@ -1865,7 +1922,7 @@ function LogoUploader({
   });
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const readFile = (file?: File | null) => {
+  const readFile = async (file?: File | null) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Please choose an image file");
@@ -1875,22 +1932,22 @@ function LogoUploader({
       toast.error("Image must be smaller than 5 MB");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== "string") return;
+    try {
+      const url = await uploadMedia(file);
       const img = new Image();
       img.onload = () =>
         setMeta({
           resolution: `${img.naturalWidth} × ${img.naturalHeight} px`,
           size: `${(file.size / 1024).toFixed(0)} KB`,
         });
-      img.src = reader.result;
-      onChange(reader.result);
+      img.src = url;
+      onChange(url);
       toast.success("Logo uploaded");
-    };
-    reader.onerror = () => toast.error("Could not read the file");
-    reader.readAsDataURL(file);
+    } catch (error) {
+      toast.error((error as Error).message || "Upload failed");
+    }
   };
+
 
   return (
     <div className="space-y-3">
