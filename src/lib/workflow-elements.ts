@@ -17,6 +17,7 @@ import {
   MessageSquare,
   GitBranch,
   Users,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -103,6 +104,7 @@ export const ELEMENT_SECTIONS: ElementSection[] = [
           { id: "a_remove_tag", label: "Remove tag", icon: Tag },
           { id: "a_copy_list", label: "Copy to list", icon: Copy },
           { id: "a_move_list", label: "Move to list", icon: ArrowRightLeft },
+          { id: "a_remove_contact", label: "Remove contact", icon: Trash2 },
           { id: "a_change_score", label: "Change score", icon: Star },
         ],
       },

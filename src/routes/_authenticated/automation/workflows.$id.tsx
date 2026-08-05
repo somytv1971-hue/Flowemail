@@ -46,6 +46,10 @@ import {
   WorkflowMoveToListPanel,
   type MoveToListConfig,
 } from "@/components/workflow-move-to-list-panel";
+import {
+  WorkflowRemoveContactPanel,
+  type RemoveContactConfig,
+} from "@/components/workflow-remove-contact-panel";
 
 
 export const Route = createFileRoute("/_authenticated/automation/workflows/$id")({
@@ -335,7 +339,7 @@ function PropertiesPanel({
 }: {
   node: WorkflowNode | null;
   workflowName: string;
-  onConfigChange: (patch: SubscribeConfig & SendMessageConfig & MessageOpenedConfig & MoveToListConfig) => void;
+  onConfigChange: (patch: SubscribeConfig & SendMessageConfig & MessageOpenedConfig & MoveToListConfig & RemoveContactConfig) => void;
 }) {
   if (!node) {
     return (
@@ -357,6 +361,11 @@ function PropertiesPanel({
   if (node.element === "a_move_list" || node.element === "moved_to_list" || node.element === "c_moved_list") {
     return <WorkflowMoveToListPanel config={node.config ?? {}} onChange={onConfigChange} />;
   }
+
+  if (node.element === "a_remove_contact" || node.element === "a_remove_list") {
+    return <WorkflowRemoveContactPanel config={node.config ?? {}} onChange={onConfigChange} />;
+  }
+
 
 
   const isSubscribe =
