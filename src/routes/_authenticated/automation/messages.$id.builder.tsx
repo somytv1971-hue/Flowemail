@@ -114,6 +114,72 @@ function MediaUploader({
   );
 }
 
+function MediaDropZone({
+  accept,
+  icon,
+  hint,
+  onUploaded,
+  onSelect,
+}: {
+  accept: string;
+  icon: React.ReactNode;
+  hint: string;
+  onUploaded: (url: string) => void;
+  onSelect?: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFile = async (file?: File) => {
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error("File must be smaller than 25 MB");
+      return;
+    }
+    setBusy(true);
+    try {
+      onUploaded(await uploadMedia(file));
+      toast.success("Upload complete");
+    } catch (error) {
+      toast.error((error as Error).message || "Upload failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => {
+        onSelect?.();
+        inputRef.current?.click();
+      }}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        void handleFile(event.dataTransfer.files?.[0]);
+      }}
+      className="flex h-32 w-full flex-col items-center justify-center gap-1 rounded bg-muted text-muted-foreground hover:bg-muted/70"
+    >
+      {icon}
+      <span className="text-xs">{busy ? "Uploading…" : hint}</span>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          void handleFile(file);
+        }}
+      />
+    </button>
+  );
+}
+
 
 export const Route = createFileRoute("/_authenticated/automation/messages/$id/builder")({
   head: () => ({
@@ -252,8 +318,24 @@ function EditableText({
   className?: string;
   style?: React.CSSProperties;
 }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    node.innerText = value;
+    node.focus();
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    range.collapse(false);
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    // Only on mount: never overwrite while the user types.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <div
+      ref={ref}
       role="textbox"
       tabIndex={0}
       contentEditable
@@ -265,10 +347,6 @@ function EditableText({
         if (event.key === "Escape") event.currentTarget.blur();
         event.stopPropagation();
       }}
-      ref={(node) => {
-        if (node && node.innerText !== value) node.innerText = value;
-        if (node && document.activeElement !== node) node.focus();
-      }}
     />
   );
 }
@@ -278,11 +356,13 @@ function BlockPreview({
   editable,
   onStartEdit,
   onCommit,
+  onSetUrl,
 }: {
   block: Block;
   editable?: boolean;
   onStartEdit?: () => void;
   onCommit?: (content: string) => void;
+  onSetUrl?: (url: string) => void;
 }) {
   const { type } = block;
   const countdown = useCountdown(block.date);
@@ -303,13 +383,13 @@ function BlockPreview({
               className="max-w-full rounded object-cover"
             />
           ) : (
-            <button
-              type="button"
-              onClick={() => onStartEdit?.()}
-              className="flex h-32 w-full items-center justify-center rounded bg-muted text-muted-foreground"
-            >
-              <ImageIcon className="h-6 w-6" />
-            </button>
+            <MediaDropZone
+              accept="image/*"
+              icon={<ImageIcon className="h-6 w-6" />}
+              hint="Click to upload an image"
+              onUploaded={(url) => onSetUrl?.(url)}
+              onSelect={() => onStartEdit?.()}
+            />
           )}
         </div>
       );
@@ -372,13 +452,13 @@ function BlockPreview({
               <span className="mt-1 block truncate text-xs text-muted-foreground">{block.url}</span>
             </a>
           ) : (
-            <button
-              type="button"
-              onClick={() => onStartEdit?.()}
-              className="flex h-32 w-full items-center justify-center rounded bg-muted text-muted-foreground"
-            >
-              <PlayCircle className="h-7 w-7" />
-            </button>
+            <MediaDropZone
+              accept="video/*"
+              icon={<PlayCircle className="h-7 w-7" />}
+              hint="Click to upload a video"
+              onUploaded={(url) => onSetUrl?.(url)}
+              onSelect={() => onStartEdit?.()}
+            />
           )}
         </div>
       );
@@ -483,6 +563,7 @@ function BuilderPage() {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [openSections, setOpenSections] = useState<string[]>(["sections"]);
 
   const [tab, setTab] = useState<"layout" | "style">("layout");
   const [dragOver, setDragOver] = useState(false);
@@ -544,6 +625,14 @@ function BuilderPage() {
   };
 
   const selectedBlock = blocks.find((block) => block.key === selected) ?? null;
+
+  useEffect(() => {
+    if (!selected) return;
+    setTab("layout");
+    setOpenSections((current) =>
+      current.includes("selected") ? current : [...current, "selected"],
+    );
+  }, [selected]);
 
   const addBlock = (type: BlockType, index?: number) => {
     const block: Block = {
@@ -782,6 +871,13 @@ function BuilderPage() {
                             ),
                           );
                         }}
+                        onSetUrl={(url) =>
+                          commitBlocks((current) =>
+                            current.map((item) =>
+                              item.key === b.key ? { ...item, url } : item,
+                            ),
+                          )
+                        }
                       />
 
                       <div className="absolute right-2 top-2 hidden items-center gap-1 group-hover:flex">
@@ -854,7 +950,12 @@ function BuilderPage() {
           </div>
 
           {tab === "layout" ? (
-            <Accordion type="multiple" defaultValue={["basic"]} className="px-2">
+            <Accordion
+              type="multiple"
+              value={openSections}
+              onValueChange={setOpenSections}
+              className="px-2"
+            >
               <AccordionItem value="sections">
                 <AccordionTrigger className="px-3 text-sm">Sections</AccordionTrigger>
                 <AccordionContent className="px-3">
