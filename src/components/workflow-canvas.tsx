@@ -10,6 +10,10 @@ import {
   moveToListSummary,
   type MoveToListConfig,
 } from "@/components/workflow-move-to-list-panel";
+import {
+  removeContactSummary,
+  type RemoveContactConfig,
+} from "@/components/workflow-remove-contact-panel";
 import { ELEMENT_SECTIONS } from "@/lib/workflow-elements";
 
 export type WorkflowNode = {
