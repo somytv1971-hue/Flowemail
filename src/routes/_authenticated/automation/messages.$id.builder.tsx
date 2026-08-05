@@ -315,13 +315,13 @@ function BlockPreview({
               className="max-w-full rounded object-cover"
             />
           ) : (
-            <button
-              type="button"
-              onClick={() => onStartEdit?.()}
-              className="flex h-32 w-full items-center justify-center rounded bg-muted text-muted-foreground"
-            >
-              <ImageIcon className="h-6 w-6" />
-            </button>
+            <MediaDropZone
+              accept="image/*"
+              icon={<ImageIcon className="h-6 w-6" />}
+              hint="Click to upload an image"
+              onUploaded={(url) => onSetUrl?.(url)}
+              onSelect={() => onStartEdit?.()}
+            />
           )}
         </div>
       );
