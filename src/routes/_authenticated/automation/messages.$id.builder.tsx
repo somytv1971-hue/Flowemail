@@ -404,10 +404,18 @@ function BlockPreview({
     case "text":
       return editable ? (
         <EditableText
+          html
           value={text}
           onCommit={commit}
-          className="rounded text-sm leading-relaxed"
+          className="rich-text rounded text-sm leading-relaxed"
           style={{ color: block.color, fontSize: block.fontSize, textAlign: align }}
+        />
+      ) : looksLikeHtml(text) ? (
+        <div
+          className="rich-text cursor-text text-sm leading-relaxed text-foreground"
+          style={{ color: block.color, fontSize: block.fontSize, textAlign: align }}
+          onClick={() => onStartEdit?.()}
+          dangerouslySetInnerHTML={{ __html: text }}
         />
       ) : (
         <p
@@ -418,6 +426,7 @@ function BlockPreview({
           {text}
         </p>
       );
+
 
     case "button":
       return (
