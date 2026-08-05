@@ -133,7 +133,17 @@ function parseDocument(value: string | null | undefined): BuilderDocument | null
   }
 }
 
-function BlockPreview({ block }: { block: Block }) {
+function BlockPreview({
+  block,
+  editable,
+  onStartEdit,
+  onCommit,
+}: {
+  block: Block;
+  editable?: boolean;
+  onStartEdit?: () => void;
+  onCommit?: (content: string) => void;
+}) {
   const { type } = block;
   switch (type) {
     case "image":
@@ -151,11 +161,36 @@ function BlockPreview({ block }: { block: Block }) {
         </div>
       );
     case "text":
+      if (editable) {
+        return (
+          <div
+            role="textbox"
+            tabIndex={0}
+            contentEditable
+            suppressContentEditableWarning
+            className="min-h-[24px] whitespace-pre-wrap rounded text-sm leading-relaxed text-foreground outline-none"
+            onBlur={(event) => onCommit?.(event.currentTarget.innerText)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") event.currentTarget.blur();
+              event.stopPropagation();
+            }}
+            ref={(node) => {
+              if (node && node.innerText !== (block.content ?? "")) {
+                node.innerText = block.content ?? "";
+              }
+            }}
+          />
+        );
+      }
       return (
-        <p className="text-sm leading-relaxed text-foreground">
+        <p
+          className="cursor-text text-sm leading-relaxed text-foreground"
+          onClick={() => onStartEdit?.()}
+        >
           {block.content || "Write your message here. Click to edit this text block."}
         </p>
       );
+
     case "button":
       return (
         <div className="flex justify-center">
