@@ -42,6 +42,10 @@ import {
   WorkflowMessageOpenedPanel,
   type MessageOpenedConfig,
 } from "@/components/workflow-message-opened-panel";
+import {
+  WorkflowMoveToListPanel,
+  type MoveToListConfig,
+} from "@/components/workflow-move-to-list-panel";
 
 
 export const Route = createFileRoute("/_authenticated/automation/workflows/$id")({
