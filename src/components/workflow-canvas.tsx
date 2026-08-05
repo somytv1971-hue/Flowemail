@@ -122,11 +122,13 @@ export function WorkflowCanvas({
 
   const finishLink = (targetId?: string) => {
     if (link && targetId && targetId !== link.source) {
-      const exists = edges.some((e) => e.source === link.source && e.target === targetId);
+      const exists = edges.some(
+        (e) => e.source === link.source && e.target === targetId && e.branch === link.branch,
+      );
       if (!exists)
         onEdgesChange([
           ...edges,
-          { id: crypto.randomUUID(), source: link.source, target: targetId },
+          { id: crypto.randomUUID(), source: link.source, target: targetId, branch: link.branch },
         ]);
     }
     setLink(null);
