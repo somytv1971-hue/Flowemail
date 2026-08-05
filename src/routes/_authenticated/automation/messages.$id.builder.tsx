@@ -133,7 +133,17 @@ function parseDocument(value: string | null | undefined): BuilderDocument | null
   }
 }
 
-function BlockPreview({ block }: { block: Block }) {
+function BlockPreview({
+  block,
+  editable,
+  onStartEdit,
+  onCommit,
+}: {
+  block: Block;
+  editable?: boolean;
+  onStartEdit?: () => void;
+  onCommit?: (content: string) => void;
+}) {
   const { type } = block;
   switch (type) {
     case "image":
@@ -151,11 +161,38 @@ function BlockPreview({ block }: { block: Block }) {
         </div>
       );
     case "text":
+      if (editable) {
+        return (
+          <div
+            role="textbox"
+            tabIndex={0}
+            contentEditable
+            suppressContentEditableWarning
+            className="min-h-[24px] whitespace-pre-wrap rounded text-sm leading-relaxed text-foreground outline-none"
+            onBlur={(event) => onCommit?.(event.currentTarget.innerText)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") event.currentTarget.blur();
+              event.stopPropagation();
+            }}
+            ref={(node) => {
+              if (node && node.innerText !== (block.content ?? "")) {
+                node.innerText = block.content ?? "";
+              }
+              if (node && document.activeElement !== node) node.focus();
+            }}
+
+          />
+        );
+      }
       return (
-        <p className="text-sm leading-relaxed text-foreground">
+        <p
+          className="cursor-text text-sm leading-relaxed text-foreground"
+          onClick={() => onStartEdit?.()}
+        >
           {block.content || "Write your message here. Click to edit this text block."}
         </p>
       );
+
     case "button":
       return (
         <div className="flex justify-center">
@@ -224,6 +261,8 @@ function BuilderPage() {
 
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+
   const [tab, setTab] = useState<"layout" | "style">("layout");
   const [dragOver, setDragOver] = useState(false);
   const [style, setStyle] = useState<MessageStyle>(DEFAULT_STYLE);
@@ -467,7 +506,7 @@ function BuilderPage() {
                   {blocks.map((b, index) => (
                     <div
                       key={b.key}
-                      draggable
+                      draggable={editingKey !== b.key}
                       onDragStart={(event) => {
                         draggedKey.current = b.key;
                         event.dataTransfer.effectAllowed = "move";
@@ -490,13 +529,32 @@ function BuilderPage() {
                         draggedKey.current = null;
                       }}
                       onClick={() => setSelected(b.key)}
+                      onDoubleClick={() => {
+                        if (b.type === "text") setEditingKey(b.key);
+                      }}
                       className={`group relative rounded border p-4 transition ${
                         selected === b.key
                           ? "border-primary ring-1 ring-primary"
                           : "border-transparent hover:border-border"
                       }`}
                     >
-                      <BlockPreview block={b} />
+                      <BlockPreview
+                        block={b}
+                        editable={editingKey === b.key}
+                        onStartEdit={() => {
+                          setSelected(b.key);
+                          setEditingKey(b.key);
+                        }}
+                        onCommit={(content) => {
+                          setEditingKey(null);
+                          commitBlocks((current) =>
+                            current.map((item) =>
+                              item.key === b.key ? { ...item, content } : item,
+                            ),
+                          );
+                        }}
+                      />
+
                       <div className="absolute right-2 top-2 hidden items-center gap-1 group-hover:flex">
                         <GripVertical className="h-4 w-4 text-muted-foreground" />
                         <button
