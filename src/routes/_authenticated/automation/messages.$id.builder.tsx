@@ -178,7 +178,9 @@ function BlockPreview({
               if (node && node.innerText !== (block.content ?? "")) {
                 node.innerText = block.content ?? "";
               }
+              if (node && document.activeElement !== node) node.focus();
             }}
+
           />
         );
       }
