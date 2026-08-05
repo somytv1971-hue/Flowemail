@@ -46,6 +46,10 @@ import {
   WorkflowMoveToListPanel,
   type MoveToListConfig,
 } from "@/components/workflow-move-to-list-panel";
+import {
+  WorkflowRemoveContactPanel,
+  type RemoveContactConfig,
+} from "@/components/workflow-remove-contact-panel";
 
 
 export const Route = createFileRoute("/_authenticated/automation/workflows/$id")({
