@@ -270,6 +270,8 @@ export function WorkflowCanvas({
         {nodes.map((node) => {
           const Icon = iconFor(node.element);
           const isStart = node.type === "start";
+          const isCondition = isConditionNode(node);
+          const showNo = isCondition && (node.config?.wait_mode ?? "after_time") !== "never";
           return (
             <div
               key={node.id}
