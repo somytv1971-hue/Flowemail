@@ -1,7 +1,11 @@
 import { useCallback, useRef, useState } from "react";
-import { Trash2, CheckCircle2 } from "lucide-react";
+import { Trash2, CheckCircle2, Check, X } from "lucide-react";
 import { subscribeSummary, type SubscribeConfig } from "@/components/workflow-subscribe-panel";
 import { sendMessageSummary, type SendMessageConfig } from "@/components/workflow-send-message-panel";
+import {
+  messageOpenedSummary,
+  type MessageOpenedConfig,
+} from "@/components/workflow-message-opened-panel";
 import { ELEMENT_SECTIONS } from "@/lib/workflow-elements";
 
 export type WorkflowNode = {
@@ -12,15 +16,22 @@ export type WorkflowNode = {
   label?: string;
   x: number;
   y: number;
-  config?: SubscribeConfig & SendMessageConfig;
+  config?: SubscribeConfig & SendMessageConfig & MessageOpenedConfig;
 };
 
-export type WorkflowEdge = { id: string; source: string; target: string };
+export type WorkflowEdge = {
+  id: string;
+  source: string;
+  target: string;
+  branch?: "yes" | "no";
+};
 
 export const NODE_W = 300;
 export const NODE_H = 76;
 export const CANVAS_W = 2600;
 export const CANVAS_H = 1800;
+
+const CONDITION_ELEMENTS = ["opens_message", "c_message_opened"];
 
 const ALL_ITEMS = ELEMENT_SECTIONS.flatMap((s) => s.groups.flatMap((g) => g.items));
 
@@ -28,17 +39,29 @@ function iconFor(element: string) {
   return ALL_ITEMS.find((i) => i.id === element)?.icon;
 }
 
+function isConditionNode(node: WorkflowNode) {
+  return CONDITION_ELEMENTS.includes(node.element);
+}
+
 function nodeLabel(node: WorkflowNode, startLabel?: string) {
   if (node.type === "start")
     return subscribeSummary(node.config ?? {}) || `Subscribed via ${startLabel ?? "any list"}`;
   if (node.element === "a_send_message") return sendMessageSummary(node.config ?? {});
+  if (isConditionNode(node)) return messageOpenedSummary(node.config ?? {});
   return node.label ?? node.element;
+}
+
+function outAnchor(node: WorkflowNode, branch?: "yes" | "no") {
+  if (isConditionNode(node) && branch)
+    return { x: node.x + NODE_W * (branch === "yes" ? 0.32 : 0.68), y: node.y + NODE_H };
+  return { x: node.x + NODE_W / 2, y: node.y + NODE_H };
 }
 
 function path(x1: number, y1: number, x2: number, y2: number) {
   const dy = Math.max(40, Math.abs(y2 - y1) / 2);
   return `M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`;
 }
+
 
 export function WorkflowCanvas({
   nodes,
