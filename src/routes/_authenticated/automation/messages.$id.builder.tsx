@@ -871,6 +871,13 @@ function BuilderPage() {
                             ),
                           );
                         }}
+                        onSetUrl={(url) =>
+                          commitBlocks((current) =>
+                            current.map((item) =>
+                              item.key === b.key ? { ...item, url } : item,
+                            ),
+                          )
+                        }
                       />
 
                       <div className="absolute right-2 top-2 hidden items-center gap-1 group-hover:flex">
