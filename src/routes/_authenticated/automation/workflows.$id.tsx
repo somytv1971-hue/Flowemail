@@ -258,65 +258,6 @@ function BuilderPage() {
   );
 }
 
-function NodeCard({
-  node,
-  startLabel,
-  selected,
-  onClick,
-  onDelete,
-}: {
-  node: WorkflowNode;
-  startLabel?: string;
-  selected: boolean;
-  onClick: () => void;
-  onDelete?: () => void;
-}) {
-  const isStart = node.type === "start";
-  const isSend = node.element === "a_send_message";
-  const label = isStart
-    ? subscribeSummary(node.config ?? {}) || `Subscribed via ${startLabel ?? "any list"}`
-    : isSend
-      ? sendMessageSummary(node.config ?? {})
-      : node.label ?? node.element;
-
-
-  return (
-    <div
-      onClick={onClick}
-      className={`group relative flex w-[360px] cursor-pointer items-center gap-3 rounded-xl border-2 bg-card p-3 shadow-sm transition-all ${
-        selected ? "border-primary shadow-md" : "border-border hover:border-primary/40"
-      }`}
-    >
-      <div
-        className={`grid h-10 w-10 shrink-0 rotate-45 place-items-center rounded-md ${
-          isStart ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"
-        }`}
-      >
-        <div className="-rotate-45 text-sm font-bold">{isStart ? "S" : "•"}</div>
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium">{label}</div>
-        {isStart && (
-          <div className="mt-0.5 flex items-center gap-1 text-xs text-success">
-            <CheckCircle2 className="h-3 w-3" /> Start element
-          </div>
-        )}
-      </div>
-      {onDelete && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="opacity-0 transition-opacity group-hover:opacity-100"
-          aria-label="Delete"
-        >
-          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-        </button>
-      )}
-    </div>
-  );
-}
 
 function AddElementsPanel({ onAdd }: { onAdd: (id: string, label: string) => void }) {
   const [channelTab, setChannelTab] = useState<"email" | "web">("email");
