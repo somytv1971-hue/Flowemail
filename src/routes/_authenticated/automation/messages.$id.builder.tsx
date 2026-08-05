@@ -105,7 +105,51 @@ type Block = {
   content?: string;
   url?: string;
   layout?: SectionLayout;
+  align?: "left" | "center" | "right";
+  color?: string;
+  bgColor?: string;
+  fontSize?: number;
+  height?: number;
+  date?: string;
+  socials?: Record<string, string>;
 };
+
+const SOCIAL_NETWORKS = ["facebook", "twitter", "instagram", "linkedin", "youtube"] as const;
+
+const EDITABLE_TEXT: BlockType[] = ["text", "button", "webinar", "html"];
+
+function defaultContent(type: BlockType) {
+  switch (type) {
+    case "text":
+      return "Write your message here. Click to edit this text block.";
+    case "button":
+      return "Click here";
+    case "webinar":
+      return "Join our live webinar — Thursday, 6:00 PM";
+    case "html":
+      return "<div>Custom HTML</div>";
+    default:
+      return "";
+  }
+}
+
+function useCountdown(target?: string) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const end = target ? new Date(target).getTime() : NaN;
+  const diff = Number.isNaN(end) ? 0 : Math.max(0, end - now);
+  const pad = (n: number) => String(Math.floor(n)).padStart(2, "0");
+  return [
+    pad(diff / 86400000),
+    pad((diff % 86400000) / 3600000),
+    pad((diff % 3600000) / 60000),
+    pad((diff % 60000) / 1000),
+  ];
+}
+
 
 type BuilderDocument = {
   version: 1;
