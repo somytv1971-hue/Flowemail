@@ -354,6 +354,11 @@ function PropertiesPanel({
     return <WorkflowMessageOpenedPanel config={node.config ?? {}} onChange={onConfigChange} />;
   }
 
+  if (node.element === "a_move_list" || node.element === "moved_to_list" || node.element === "c_moved_list") {
+    return <WorkflowMoveToListPanel config={node.config ?? {}} onChange={onConfigChange} />;
+  }
+
+
   const isSubscribe =
     node.type === "start" ||
     node.element === "subscribes" ||
