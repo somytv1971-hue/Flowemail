@@ -293,14 +293,23 @@ function AddElementsPanel({ onAdd }: { onAdd: (id: string, label: string) => voi
                       return (
                         <button
                           key={item.id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = "copy";
+                            e.dataTransfer.setData(
+                              "application/x-workflow-element",
+                              JSON.stringify({ id: item.id, label: item.label }),
+                            );
+                          }}
                           onClick={() => onAdd(item.id, item.label)}
-                          className="flex items-center gap-2 rounded-lg border bg-background p-2 text-left text-xs transition-colors hover:border-primary hover:bg-primary/5"
+                          className="flex cursor-grab items-center gap-2 rounded-lg border bg-background p-2 text-left text-xs transition-colors hover:border-primary hover:bg-primary/5 active:cursor-grabbing"
                         >
                           <div className="grid h-8 w-8 shrink-0 rotate-45 place-items-center rounded bg-primary/10 text-primary">
                             <Icon className="h-3.5 w-3.5 -rotate-45" />
                           </div>
                           <span className="line-clamp-2 font-medium leading-tight">{item.label}</span>
                         </button>
+
                       );
                     })}
                   </div>
