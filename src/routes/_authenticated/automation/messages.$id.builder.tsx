@@ -863,20 +863,13 @@ function BuilderPage() {
                           onChange={(event) => updateSelected({ url: event.target.value })}
                           placeholder="https://…"
                         />
-                        {selectedBlock.type === "image" && (
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={(event) => {
-                              const file = event.target.files?.[0];
-                              if (!file) return;
-                              const reader = new FileReader();
-                              reader.onload = () =>
-                                updateSelected({ url: String(reader.result ?? "") });
-                              reader.readAsDataURL(file);
-                            }}
+                        {(selectedBlock.type === "image" || selectedBlock.type === "video") && (
+                          <MediaUploader
+                            accept={selectedBlock.type === "image" ? "image/*" : "video/*"}
+                            onUploaded={(url) => updateSelected({ url })}
                           />
                         )}
+
                         {selectedBlock.type === "image" && (
                           <Input
                             value={selectedBlock.content ?? ""}
