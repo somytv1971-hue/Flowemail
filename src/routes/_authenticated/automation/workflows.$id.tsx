@@ -335,7 +335,7 @@ function PropertiesPanel({
 }: {
   node: WorkflowNode | null;
   workflowName: string;
-  onConfigChange: (patch: SubscribeConfig & SendMessageConfig & MessageOpenedConfig) => void;
+  onConfigChange: (patch: SubscribeConfig & SendMessageConfig & MessageOpenedConfig & MoveToListConfig) => void;
 }) {
   if (!node) {
     return (
