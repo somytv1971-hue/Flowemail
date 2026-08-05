@@ -250,7 +250,11 @@ export function RichTextToolbar() {
         title="Insert link"
         onClick={() => {
           const url = window.prompt("Link URL", "https://");
-          if (url) exec("createLink", url);
+          if (url) {
+            exec("createLink", url);
+            exec("foreColor", "#1a73e8");
+            exec("underline");
+          }
         }}
       >
         <Link2 className="h-4 w-4" />
