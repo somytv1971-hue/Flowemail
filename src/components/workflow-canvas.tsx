@@ -88,7 +88,12 @@ export function WorkflowCanvas({
 }) {
   const areaRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{ id: string; dx: number; dy: number } | null>(null);
-  const [link, setLink] = useState<{ source: string; x: number; y: number } | null>(null);
+  const [link, setLink] = useState<{
+    source: string;
+    branch?: "yes" | "no";
+    x: number;
+    y: number;
+  } | null>(null);
   const [hoverEdge, setHoverEdge] = useState<string | null>(null);
 
   const toCanvas = useCallback(
