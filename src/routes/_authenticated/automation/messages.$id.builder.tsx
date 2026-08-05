@@ -479,8 +479,14 @@ function BuilderPage() {
     });
   };
 
+  const selectedBlock = blocks.find((block) => block.key === selected) ?? null;
+
   const addBlock = (type: BlockType, index?: number) => {
-    const block = { key: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type };
+    const block: Block = {
+      key: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      type,
+      ...(defaultContent(type) ? { content: defaultContent(type) } : {}),
+    };
     commitBlocks((b) => {
       const next = [...b];
       next.splice(index ?? next.length, 0, block);
@@ -488,6 +494,7 @@ function BuilderPage() {
     });
     setSelected(block.key);
   };
+
 
   const addSection = (layout: SectionLayout) => {
     const columns = layout === "3 columns" ? 3 : layout === "1 column" ? 1 : 2;
