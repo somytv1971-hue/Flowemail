@@ -114,6 +114,72 @@ function MediaUploader({
   );
 }
 
+function MediaDropZone({
+  accept,
+  icon,
+  hint,
+  onUploaded,
+  onSelect,
+}: {
+  accept: string;
+  icon: React.ReactNode;
+  hint: string;
+  onUploaded: (url: string) => void;
+  onSelect?: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFile = async (file?: File) => {
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error("File must be smaller than 25 MB");
+      return;
+    }
+    setBusy(true);
+    try {
+      onUploaded(await uploadMedia(file));
+      toast.success("Upload complete");
+    } catch (error) {
+      toast.error((error as Error).message || "Upload failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => {
+        onSelect?.();
+        inputRef.current?.click();
+      }}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        void handleFile(event.dataTransfer.files?.[0]);
+      }}
+      className="flex h-32 w-full flex-col items-center justify-center gap-1 rounded bg-muted text-muted-foreground hover:bg-muted/70"
+    >
+      {icon}
+      <span className="text-xs">{busy ? "Uploading…" : hint}</span>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          void handleFile(file);
+        }}
+      />
+    </button>
+  );
+}
+
 
 export const Route = createFileRoute("/_authenticated/automation/messages/$id/builder")({
   head: () => ({
