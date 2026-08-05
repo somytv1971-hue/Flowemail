@@ -29,14 +29,18 @@ import {
 import { toast } from "sonner";
 import {
   WorkflowSubscribePanel,
-  subscribeSummary,
   type SubscribeConfig,
 } from "@/components/workflow-subscribe-panel";
 import {
   WorkflowSendMessagePanel,
-  sendMessageSummary,
   type SendMessageConfig,
 } from "@/components/workflow-send-message-panel";
+import {
+  WorkflowCanvas,
+  NODE_W,
+  type WorkflowNode,
+  type WorkflowEdge,
+} from "@/components/workflow-canvas";
 
 
 export const Route = createFileRoute("/_authenticated/automation/workflows/$id")({
@@ -49,16 +53,6 @@ export const Route = createFileRoute("/_authenticated/automation/workflows/$id")
   component: BuilderPage,
 });
 
-type WorkflowNode = {
-  id: string;
-  type: string;
-  element: string;
-  channel?: string;
-  label?: string;
-  x: number;
-  y: number;
-  config?: SubscribeConfig & SendMessageConfig;
-};
 
 function BuilderPage() {
   const { id } = Route.useParams();
