@@ -73,6 +73,7 @@ function BuilderPage() {
 
   const [name, setName] = useState("");
   const [nodes, setNodes] = useState<WorkflowNode[]>([]);
+  const [edges, setEdges] = useState<WorkflowEdge[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [tab, setTab] = useState<"add" | "props">("add");
@@ -81,11 +82,12 @@ function BuilderPage() {
     if (workflow) {
       setName(workflow.name);
       setNodes((workflow.nodes as WorkflowNode[]) ?? []);
+      setEdges(((workflow as any).edges as WorkflowEdge[]) ?? []);
     }
   }, [workflow]);
 
   const save = useMutation({
-    mutationFn: (patch: { name?: string; nodes?: WorkflowNode[] }) =>
+    mutationFn: (patch: { name?: string; nodes?: WorkflowNode[]; edges?: WorkflowEdge[] }) =>
       update({ data: { id, ...patch } }),
     onSuccess: () => {
       toast.success("Saved");
@@ -96,7 +98,7 @@ function BuilderPage() {
   });
 
   const publish = useMutation({
-    mutationFn: () => update({ data: { id, status: "published", nodes, name } }),
+    mutationFn: () => update({ data: { id, status: "published", nodes, edges, name } }),
     onSuccess: () => {
       toast.success("Workflow published");
       qc.invalidateQueries({ queryKey: ["workflows"] });
@@ -104,19 +106,28 @@ function BuilderPage() {
     },
   });
 
-  const addElement = (elementId: string, label: string) => {
+  const placeElement = (elementId: string, label: string, x?: number, y?: number) => {
     const last = nodes[nodes.length - 1];
-    const y = last ? last.y + 140 : 200;
-    setNodes([
-      ...nodes,
-      { id: crypto.randomUUID(), type: "step", element: elementId, label, x: 400, y },
-    ]);
+    const node: WorkflowNode = {
+      id: crypto.randomUUID(),
+      type: "step",
+      element: elementId,
+      label,
+      x: x ?? last?.x ?? 400,
+      y: y ?? (last ? last.y + 160 : 200),
+    };
+    setNodes([...nodes, node]);
+    if (last && x === undefined)
+      setEdges([...edges, { id: crypto.randomUUID(), source: last.id, target: node.id }]);
+    setSelectedId(node.id);
   };
 
   const deleteNode = (nodeId: string) => {
     setNodes(nodes.filter((n) => n.id !== nodeId || n.type === "start"));
+    setEdges(edges.filter((e) => e.source !== nodeId && e.target !== nodeId));
     if (selectedId === nodeId) setSelectedId(null);
   };
+
 
   if (isLoading || !workflow) {
     return <div className="p-10 text-center text-sm text-muted-foreground">Loading workflow…</div>;
