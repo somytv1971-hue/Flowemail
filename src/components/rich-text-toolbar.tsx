@@ -96,6 +96,10 @@ export function RichTextToolbar() {
   useEffect(() => {
     const sync = () => {
       try {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && isEditableNode(sel.anchorNode)) {
+          savedRange = sel.getRangeAt(0).cloneRange();
+        }
         setState({
           bold: document.queryCommandState("bold"),
           italic: document.queryCommandState("italic"),
@@ -109,6 +113,7 @@ export function RichTextToolbar() {
     document.addEventListener("selectionchange", sync);
     return () => document.removeEventListener("selectionchange", sync);
   }, []);
+
 
   const hold = (event: React.MouseEvent) => event.preventDefault();
 
