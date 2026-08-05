@@ -329,17 +329,52 @@ export function WorkflowCanvas({
                   </button>
                 )}
               </div>
-              {/* output handle */}
-              <div
-                data-handle="out"
-                title="Drag to connect"
-                className="absolute left-1/2 bottom-0 h-4 w-4 -translate-x-1/2 translate-y-1/2 cursor-crosshair rounded-full border-2 border-primary bg-background transition-transform hover:scale-125"
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  const p = toCanvas(e);
-                  setLink({ source: node.id, x: p.x, y: p.y });
-                }}
-              />
+              {/* output handles */}
+              {isCondition ? (
+                <>
+                  <button
+                    data-handle="out-yes"
+                    title="If yes"
+                    aria-label="If yes connector"
+                    className="absolute bottom-0 grid h-6 w-6 translate-y-1/2 place-items-center rounded-full border-2 border-background bg-success text-success-foreground shadow-sm transition-transform hover:scale-110"
+                    style={{ left: `${32}%`, marginLeft: -12 }}
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      const p = toCanvas(e);
+                      setLink({ source: node.id, branch: "yes", x: p.x, y: p.y });
+                    }}
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                  </button>
+                  {showNo && (
+                    <button
+                      data-handle="out-no"
+                      title="If no"
+                      aria-label="If no connector"
+                      className="absolute bottom-0 grid h-6 w-6 translate-y-1/2 place-items-center rounded-full border-2 border-background bg-destructive text-destructive-foreground shadow-sm transition-transform hover:scale-110"
+                      style={{ left: `${68}%`, marginLeft: -12 }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        const p = toCanvas(e);
+                        setLink({ source: node.id, branch: "no", x: p.x, y: p.y });
+                      }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div
+                  data-handle="out"
+                  title="Drag to connect"
+                  className="absolute left-1/2 bottom-0 h-4 w-4 -translate-x-1/2 translate-y-1/2 cursor-crosshair rounded-full border-2 border-primary bg-background transition-transform hover:scale-125"
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    const p = toCanvas(e);
+                    setLink({ source: node.id, x: p.x, y: p.y });
+                  }}
+                />
+              )}
             </div>
           );
         })}
