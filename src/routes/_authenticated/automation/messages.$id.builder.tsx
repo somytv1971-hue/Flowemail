@@ -105,7 +105,51 @@ type Block = {
   content?: string;
   url?: string;
   layout?: SectionLayout;
+  align?: "left" | "center" | "right";
+  color?: string;
+  bgColor?: string;
+  fontSize?: number;
+  height?: number;
+  date?: string;
+  socials?: Record<string, string>;
 };
+
+const SOCIAL_NETWORKS = ["facebook", "twitter", "instagram", "linkedin", "youtube"] as const;
+
+const EDITABLE_TEXT: BlockType[] = ["text", "button", "webinar", "html"];
+
+function defaultContent(type: BlockType) {
+  switch (type) {
+    case "text":
+      return "Write your message here. Click to edit this text block.";
+    case "button":
+      return "Click here";
+    case "webinar":
+      return "Join our live webinar — Thursday, 6:00 PM";
+    case "html":
+      return "<div>Custom HTML</div>";
+    default:
+      return "";
+  }
+}
+
+function useCountdown(target?: string) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const end = target ? new Date(target).getTime() : NaN;
+  const diff = Number.isNaN(end) ? 0 : Math.max(0, end - now);
+  const pad = (n: number) => String(Math.floor(n)).padStart(2, "0");
+  return [
+    pad(diff / 86400000),
+    pad((diff % 86400000) / 3600000),
+    pad((diff % 3600000) / 60000),
+    pad((diff % 60000) / 1000),
+  ];
+}
+
 
 type BuilderDocument = {
   version: 1;
@@ -133,6 +177,38 @@ function parseDocument(value: string | null | undefined): BuilderDocument | null
   }
 }
 
+function EditableText({
+  value,
+  onCommit,
+  className,
+  style,
+}: {
+  value: string;
+  onCommit: (next: string) => void;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      role="textbox"
+      tabIndex={0}
+      contentEditable
+      suppressContentEditableWarning
+      className={`min-h-[20px] whitespace-pre-wrap outline-none ${className ?? ""}`}
+      style={style}
+      onBlur={(event) => onCommit(event.currentTarget.innerText)}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") event.currentTarget.blur();
+        event.stopPropagation();
+      }}
+      ref={(node) => {
+        if (node && node.innerText !== value) node.innerText = value;
+        if (node && document.activeElement !== node) node.focus();
+      }}
+    />
+  );
+}
+
 function BlockPreview({
   block,
   editable,
@@ -145,108 +221,189 @@ function BlockPreview({
   onCommit?: (content: string) => void;
 }) {
   const { type } = block;
+  const countdown = useCountdown(block.date);
+  const align = block.align ?? (type === "button" || type === "countdown" || type === "social" ? "center" : "left");
+  const justify =
+    align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
+  const text = block.content ?? defaultContent(type);
+  const commit = (next: string) => onCommit?.(next);
+
   switch (type) {
     case "image":
       return (
-        <div className="flex h-32 items-center justify-center rounded bg-muted text-muted-foreground">
+        <div className={`flex ${justify}`}>
           {block.url ? (
             <img
               src={block.url}
               alt={block.content || "Email content"}
-              className="h-full w-full rounded object-cover"
+              className="max-w-full rounded object-cover"
             />
           ) : (
-            <ImageIcon className="h-6 w-6" />
+            <button
+              type="button"
+              onClick={() => onStartEdit?.()}
+              className="flex h-32 w-full items-center justify-center rounded bg-muted text-muted-foreground"
+            >
+              <ImageIcon className="h-6 w-6" />
+            </button>
           )}
         </div>
       );
     case "text":
-      if (editable) {
-        return (
-          <div
-            role="textbox"
-            tabIndex={0}
-            contentEditable
-            suppressContentEditableWarning
-            className="min-h-[24px] whitespace-pre-wrap rounded text-sm leading-relaxed text-foreground outline-none"
-            onBlur={(event) => onCommit?.(event.currentTarget.innerText)}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") event.currentTarget.blur();
-              event.stopPropagation();
-            }}
-            ref={(node) => {
-              if (node && node.innerText !== (block.content ?? "")) {
-                node.innerText = block.content ?? "";
-              }
-              if (node && document.activeElement !== node) node.focus();
-            }}
-
-          />
-        );
-      }
-      return (
+      return editable ? (
+        <EditableText
+          value={text}
+          onCommit={commit}
+          className="rounded text-sm leading-relaxed"
+          style={{ color: block.color, fontSize: block.fontSize, textAlign: align }}
+        />
+      ) : (
         <p
-          className="cursor-text text-sm leading-relaxed text-foreground"
+          className="cursor-text whitespace-pre-wrap text-sm leading-relaxed text-foreground"
+          style={{ color: block.color, fontSize: block.fontSize, textAlign: align }}
           onClick={() => onStartEdit?.()}
         >
-          {block.content || "Write your message here. Click to edit this text block."}
+          {text}
         </p>
       );
 
     case "button":
       return (
-        <div className="flex justify-center">
-          <a
-            href={block.url || "#preview"}
-            className="rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground"
-            onClick={(event) => event.preventDefault()}
-          >
-            {block.content || "Click here"}
-          </a>
+        <div className={`flex ${justify}`}>
+          {editable ? (
+            <EditableText
+              value={text}
+              onCommit={commit}
+              className="rounded-full px-6 py-2 text-sm font-medium"
+              style={{
+                backgroundColor: block.bgColor ?? "hsl(var(--primary))",
+                color: block.color ?? "hsl(var(--primary-foreground))",
+              }}
+            />
+          ) : (
+            <span
+              className="cursor-text rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground"
+              style={{ backgroundColor: block.bgColor, color: block.color }}
+              onClick={() => onStartEdit?.()}
+            >
+              {text}
+            </span>
+          )}
         </div>
       );
     case "video":
       return (
-        <div className="flex h-32 items-center justify-center rounded bg-muted text-muted-foreground">
-          <PlayCircle className="h-7 w-7" />
+        <div className={`flex ${justify}`}>
+          {block.url ? (
+            <a
+              href={block.url}
+              target="_blank"
+              rel="noreferrer"
+              className="relative block w-full"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex h-32 w-full items-center justify-center rounded bg-muted text-primary">
+                <PlayCircle className="h-8 w-8" />
+              </div>
+              <span className="mt-1 block truncate text-xs text-muted-foreground">{block.url}</span>
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onStartEdit?.()}
+              className="flex h-32 w-full items-center justify-center rounded bg-muted text-muted-foreground"
+            >
+              <PlayCircle className="h-7 w-7" />
+            </button>
+          )}
         </div>
       );
     case "spacer":
-      return <div className="h-8" />;
+      return <div style={{ height: block.height ?? 32 }} />;
     case "divider":
-      return <div className="h-px w-full bg-border" />;
-    case "webinar":
       return (
-        <div className="rounded border border-dashed p-4 text-center text-sm text-muted-foreground">
-          Webinar details block
+        <div
+          style={{ height: block.height ?? 1, backgroundColor: block.color ?? "hsl(var(--border))" }}
+          className="w-full"
+        />
+      );
+    case "webinar":
+      return editable ? (
+        <EditableText
+          value={text}
+          onCommit={commit}
+          className="rounded border border-dashed p-4 text-sm"
+          style={{ textAlign: align }}
+        />
+      ) : (
+        <div
+          className="cursor-text rounded border border-dashed p-4 text-sm text-muted-foreground"
+          style={{ textAlign: align }}
+          onClick={() => onStartEdit?.()}
+        >
+          {text}
         </div>
       );
     case "countdown":
       return (
-        <div className="flex justify-center gap-2">
-          {["02", "14", "37", "09"].map((n) => (
-            <span key={n} className="rounded bg-muted px-3 py-2 font-mono text-sm">
+        <div className={`flex gap-2 ${justify}`}>
+          {countdown.map((n, i) => (
+            <span
+              key={["d", "h", "m", "s"][i]}
+              className="rounded bg-muted px-3 py-2 text-center font-mono text-sm"
+              style={{ color: block.color, backgroundColor: block.bgColor }}
+            >
               {n}
+              <span className="block text-[9px] uppercase text-muted-foreground">
+                {["days", "hrs", "min", "sec"][i]}
+              </span>
             </span>
           ))}
         </div>
       );
     case "social":
       return (
-        <div className="flex justify-center gap-3 text-muted-foreground">
-          <Share2 className="h-5 w-5" />
-          <Share2 className="h-5 w-5" />
-          <Share2 className="h-5 w-5" />
+        <div className={`flex gap-3 text-muted-foreground ${justify}`}>
+          {SOCIAL_NETWORKS.filter((n) => block.socials?.[n]).length ? (
+            SOCIAL_NETWORKS.filter((n) => block.socials?.[n]).map((n) => (
+              <a
+                key={n}
+                href={block.socials?.[n]}
+                target="_blank"
+                rel="noreferrer"
+                title={n}
+                onClick={(event) => event.stopPropagation()}
+                className="hover:text-primary"
+              >
+                <Share2 className="h-5 w-5" />
+              </a>
+            ))
+          ) : (
+            <>
+              <Share2 className="h-5 w-5" />
+              <Share2 className="h-5 w-5" />
+              <Share2 className="h-5 w-5" />
+            </>
+          )}
         </div>
       );
     case "html":
-      return (
-        <pre className="overflow-x-auto rounded bg-muted p-3 font-mono text-xs text-muted-foreground">
-          {block.content || "<div>Custom HTML</div>"}
-        </pre>
+      return editable ? (
+        <EditableText
+          value={text}
+          onCommit={commit}
+          className="rounded bg-muted p-3 font-mono text-xs"
+        />
+      ) : (
+        <div
+          className="cursor-text"
+          onClick={() => onStartEdit?.()}
+          dangerouslySetInnerHTML={{ __html: text }}
+        />
       );
   }
 }
+
 
 function BuilderPage() {
   const { id } = Route.useParams();
@@ -322,8 +479,14 @@ function BuilderPage() {
     });
   };
 
+  const selectedBlock = blocks.find((block) => block.key === selected) ?? null;
+
   const addBlock = (type: BlockType, index?: number) => {
-    const block = { key: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, type };
+    const block: Block = {
+      key: `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      type,
+      ...(defaultContent(type) ? { content: defaultContent(type) } : {}),
+    };
     commitBlocks((b) => {
       const next = [...b];
       next.splice(index ?? next.length, 0, block);
@@ -331,6 +494,7 @@ function BuilderPage() {
     });
     setSelected(block.key);
   };
+
 
   const addSection = (layout: SectionLayout) => {
     const columns = layout === "3 columns" ? 3 : layout === "1 column" ? 1 : 2;
@@ -530,7 +694,7 @@ function BuilderPage() {
                       }}
                       onClick={() => setSelected(b.key)}
                       onDoubleClick={() => {
-                        if (b.type === "text") setEditingKey(b.key);
+                        if (EDITABLE_TEXT.includes(b.type)) setEditingKey(b.key);
                       }}
                       className={`group relative rounded border p-4 transition ${
                         selected === b.key
@@ -543,8 +707,9 @@ function BuilderPage() {
                         editable={editingKey === b.key}
                         onStartEdit={() => {
                           setSelected(b.key);
-                          setEditingKey(b.key);
+                          if (EDITABLE_TEXT.includes(b.type)) setEditingKey(b.key);
                         }}
+
                         onCommit={(content) => {
                           setEditingKey(null);
                           commitBlocks((current) =>
@@ -646,29 +811,175 @@ function BuilderPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              {selected && (
+              {selectedBlock && (
                 <AccordionItem value="selected">
-                  <AccordionTrigger className="px-3 text-sm">Selected block</AccordionTrigger>
+                  <AccordionTrigger className="px-3 text-sm capitalize">
+                    {selectedBlock.type} settings
+                  </AccordionTrigger>
                   <AccordionContent className="space-y-3 px-3">
-                    <Label htmlFor="block-content">Content</Label>
-                    <Textarea
-                      id="block-content"
-                      value={blocks.find((block) => block.key === selected)?.content ?? ""}
-                      onChange={(event) => updateSelected({ content: event.target.value })}
-                      placeholder="Edit block content"
-                    />
+                    {EDITABLE_TEXT.includes(selectedBlock.type) && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="block-content">Content</Label>
+                        <Textarea
+                          id="block-content"
+                          value={selectedBlock.content ?? defaultContent(selectedBlock.type)}
+                          onChange={(event) => updateSelected({ content: event.target.value })}
+                          placeholder="Edit block content"
+                        />
+                      </div>
+                    )}
+
                     {(["image", "video", "button"] as BlockType[]).includes(
-                      blocks.find((block) => block.key === selected)?.type ?? "text",
+                      selectedBlock.type,
                     ) && (
-                      <Input
-                        value={blocks.find((block) => block.key === selected)?.url ?? ""}
-                        onChange={(event) => updateSelected({ url: event.target.value })}
-                        placeholder="Destination or media URL"
-                      />
+                      <div className="space-y-1.5">
+                        <Label htmlFor="block-url">
+                          {selectedBlock.type === "button" ? "Link URL" : "Media URL"}
+                        </Label>
+                        <Input
+                          id="block-url"
+                          value={selectedBlock.url ?? ""}
+                          onChange={(event) => updateSelected({ url: event.target.value })}
+                          placeholder="https://…"
+                        />
+                        {selectedBlock.type === "image" && (
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = () =>
+                                updateSelected({ url: String(reader.result ?? "") });
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                        )}
+                        {selectedBlock.type === "image" && (
+                          <Input
+                            value={selectedBlock.content ?? ""}
+                            onChange={(event) => updateSelected({ content: event.target.value })}
+                            placeholder="Alt text"
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {selectedBlock.type === "countdown" && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="block-date">Ends at</Label>
+                        <Input
+                          id="block-date"
+                          type="datetime-local"
+                          value={selectedBlock.date ?? ""}
+                          onChange={(event) => updateSelected({ date: event.target.value })}
+                        />
+                      </div>
+                    )}
+
+                    {selectedBlock.type === "social" && (
+                      <div className="space-y-2">
+                        {SOCIAL_NETWORKS.map((network) => (
+                          <Input
+                            key={network}
+                            value={selectedBlock.socials?.[network] ?? ""}
+                            onChange={(event) =>
+                              updateSelected({
+                                socials: {
+                                  ...(selectedBlock.socials ?? {}),
+                                  [network]: event.target.value,
+                                },
+                              })
+                            }
+                            placeholder={`${network} URL`}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {(["spacer", "divider"] as BlockType[]).includes(selectedBlock.type) && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="block-height">Height (px)</Label>
+                        <Input
+                          id="block-height"
+                          type="number"
+                          min={1}
+                          value={selectedBlock.height ?? (selectedBlock.type === "spacer" ? 32 : 1)}
+                          onChange={(event) =>
+                            updateSelected({ height: Number(event.target.value) || 1 })
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {selectedBlock.type !== "spacer" && (
+                      <div className="space-y-1.5">
+                        <Label>Alignment</Label>
+                        <div className="flex gap-2">
+                          {(["left", "center", "right"] as const).map((a) => (
+                            <button
+                              key={a}
+                              type="button"
+                              onClick={() => updateSelected({ align: a })}
+                              className={`flex-1 rounded border px-2 py-1 text-xs capitalize transition ${
+                                (selectedBlock.align ?? "left") === a
+                                  ? "border-primary text-foreground"
+                                  : "text-muted-foreground hover:border-primary"
+                              }`}
+                            >
+                              {a}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {(["text", "button", "countdown", "divider"] as BlockType[]).includes(
+                      selectedBlock.type,
+                    ) && (
+                      <div className="flex gap-3">
+                        <div className="flex-1 space-y-1.5">
+                          <Label htmlFor="block-color">Text color</Label>
+                          <Input
+                            id="block-color"
+                            type="color"
+                            value={selectedBlock.color ?? "#111111"}
+                            onChange={(event) => updateSelected({ color: event.target.value })}
+                          />
+                        </div>
+                        {selectedBlock.type !== "divider" && (
+                          <div className="flex-1 space-y-1.5">
+                            <Label htmlFor="block-bg">Background</Label>
+                            <Input
+                              id="block-bg"
+                              type="color"
+                              value={selectedBlock.bgColor ?? "#ffffff"}
+                              onChange={(event) => updateSelected({ bgColor: event.target.value })}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {selectedBlock.type === "text" && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="block-size">Font size (px)</Label>
+                        <Input
+                          id="block-size"
+                          type="number"
+                          min={8}
+                          value={selectedBlock.fontSize ?? 14}
+                          onChange={(event) =>
+                            updateSelected({ fontSize: Number(event.target.value) || 14 })
+                          }
+                        />
+                      </div>
                     )}
                   </AccordionContent>
                 </AccordionItem>
               )}
+
 
               <AccordionItem value="basic">
                 <AccordionTrigger className="px-3 text-sm">
