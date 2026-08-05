@@ -275,6 +275,7 @@ export type Database = {
           channel: string
           completed: number
           created_at: string
+          edges: Json
           end_on: string | null
           id: string
           in_progress: number
@@ -290,6 +291,7 @@ export type Database = {
           channel?: string
           completed?: number
           created_at?: string
+          edges?: Json
           end_on?: string | null
           id?: string
           in_progress?: number
@@ -305,6 +307,7 @@ export type Database = {
           channel?: string
           completed?: number
           created_at?: string
+          edges?: Json
           end_on?: string | null
           id?: string
           in_progress?: number
