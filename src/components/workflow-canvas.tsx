@@ -173,7 +173,20 @@ export function WorkflowCanvas({
             const s = nodes.find((n) => n.id === edge.source);
             const t = nodes.find((n) => n.id === edge.target);
             if (!s || !t) return null;
-            const d = path(s.x + NODE_W / 2, s.y + NODE_H, t.x + NODE_W / 2, t.y);
+            const a = outAnchor(s, edge.branch);
+            const d = path(a.x, a.y, t.x + NODE_W / 2, t.y);
+            const stroke =
+              edge.branch === "yes"
+                ? "stroke-success"
+                : edge.branch === "no"
+                  ? "stroke-destructive"
+                  : "stroke-primary/60";
+            const marker =
+              edge.branch === "yes"
+                ? "url(#wf-arrow-yes)"
+                : edge.branch === "no"
+                  ? "url(#wf-arrow-no)"
+                  : "url(#wf-arrow)";
             return (
               <g key={edge.id} className="pointer-events-auto">
                 <path
@@ -190,8 +203,8 @@ export function WorkflowCanvas({
                   d={d}
                   fill="none"
                   strokeWidth={2}
-                  className={hoverEdge === edge.id ? "stroke-destructive" : "stroke-primary/60"}
-                  markerEnd="url(#wf-arrow)"
+                  className={hoverEdge === edge.id ? "stroke-destructive" : stroke}
+                  markerEnd={marker}
                 />
               </g>
             );
@@ -200,13 +213,20 @@ export function WorkflowCanvas({
             (() => {
               const s = nodes.find((n) => n.id === link.source);
               if (!s) return null;
+              const a = outAnchor(s, link.branch);
               return (
                 <path
-                  d={path(s.x + NODE_W / 2, s.y + NODE_H, link.x, link.y)}
+                  d={path(a.x, a.y, link.x, link.y)}
                   fill="none"
                   strokeWidth={2}
                   strokeDasharray="6 4"
-                  className="stroke-primary"
+                  className={
+                    link.branch === "yes"
+                      ? "stroke-success"
+                      : link.branch === "no"
+                        ? "stroke-destructive"
+                        : "stroke-primary"
+                  }
                 />
               );
             })()}
@@ -221,6 +241,28 @@ export function WorkflowCanvas({
               orient="auto-start-reverse"
             >
               <path d="M 0 0 L 10 5 L 0 10 z" className="fill-primary/60" />
+            </marker>
+            <marker
+              id="wf-arrow-yes"
+              viewBox="0 0 10 10"
+              refX="8"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" className="fill-success" />
+            </marker>
+            <marker
+              id="wf-arrow-no"
+              viewBox="0 0 10 10"
+              refX="8"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" className="fill-destructive" />
             </marker>
           </defs>
         </svg>
