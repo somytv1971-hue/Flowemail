@@ -71,6 +71,49 @@ async function uploadMedia(file: File) {
   return data.signedUrl;
 }
 
+function MediaUploader({
+  accept,
+  onUploaded,
+  label = "Upload file",
+}: {
+  accept: string;
+  onUploaded: (url: string) => void;
+  label?: string;
+}) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="space-y-1">
+      <Input
+        type="file"
+        accept={accept}
+        disabled={busy}
+        onChange={async (event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (!file) return;
+          if (file.size > 25 * 1024 * 1024) {
+            toast.error("File must be smaller than 25 MB");
+            return;
+          }
+          setBusy(true);
+          try {
+            const url = await uploadMedia(file);
+            onUploaded(url);
+            toast.success("Upload complete");
+          } catch (error) {
+            toast.error((error as Error).message || "Upload failed");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
+      <p className="text-[11px] text-muted-foreground">
+        {busy ? "Uploading…" : `${label} (max 25 MB)`}
+      </p>
+    </div>
+  );
+}
+
 
 export const Route = createFileRoute("/_authenticated/automation/messages/$id/builder")({
   head: () => ({
