@@ -331,7 +331,7 @@ function PropertiesPanel({
 }: {
   node: WorkflowNode | null;
   workflowName: string;
-  onConfigChange: (patch: SubscribeConfig & SendMessageConfig) => void;
+  onConfigChange: (patch: SubscribeConfig & SendMessageConfig & MessageOpenedConfig) => void;
 }) {
   if (!node) {
     return (
@@ -344,6 +344,10 @@ function PropertiesPanel({
 
   if (node.element === "a_send_message") {
     return <WorkflowSendMessagePanel config={node.config ?? {}} onChange={onConfigChange} />;
+  }
+
+  if (node.element === "opens_message" || node.element === "c_message_opened") {
+    return <WorkflowMessageOpenedPanel config={node.config ?? {}} onChange={onConfigChange} />;
   }
 
   const isSubscribe =
