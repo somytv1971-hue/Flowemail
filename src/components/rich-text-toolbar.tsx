@@ -146,7 +146,14 @@ export function RichTextToolbar() {
   const Divider = () => <span className="mx-1 h-5 w-px bg-border" />;
 
   return (
-    <div className="sticky top-0 z-20 mb-4 flex flex-wrap items-center gap-0.5 rounded-lg border bg-card px-2 py-1.5 shadow-sm">
+    <div
+      data-rte-toolbar
+      onMouseDown={(e) => {
+        // keep the caret inside the editable block when using the toolbar
+        if (!(e.target as HTMLElement).closest("select")) e.preventDefault();
+      }}
+      className="sticky top-0 z-20 mb-4 flex flex-wrap items-center gap-0.5 rounded-lg border bg-card px-2 py-1.5 shadow-sm"
+    >
       <select
         aria-label="Text style"
         onMouseDown={(e) => e.stopPropagation()}
