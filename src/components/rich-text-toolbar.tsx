@@ -55,12 +55,42 @@ const COLORS = [
 
 const EMOJIS = ["😀", "😍", "🎉", "🔥", "✅", "⭐", "💡", "🚀", "❤️", "👍", "🎁", "📣"];
 
+let savedRange: Range | null = null;
+
+function isEditableNode(node: Node | null): boolean {
+  let el: HTMLElement | null =
+    node && node.nodeType === 3 ? node.parentElement : (node as HTMLElement | null);
+  while (el) {
+    if (el.isContentEditable) return true;
+    el = el.parentElement;
+  }
+  return false;
+}
+
+function restoreSelection() {
+  if (!savedRange) return;
+  const sel = window.getSelection();
+  sel?.removeAllRanges();
+  sel?.addRange(savedRange);
+  const container = savedRange.commonAncestorContainer;
+  const host: HTMLElement | null =
+    container.nodeType === 3 ? container.parentElement : (container as HTMLElement);
+  const editable = host?.closest?.("[contenteditable=true]") as HTMLElement | null;
+  editable?.focus();
+}
+
 function exec(command: string, value?: string) {
+  restoreSelection();
   document.execCommand(command, false, value);
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0 && isEditableNode(sel.anchorNode)) {
+    savedRange = sel.getRangeAt(0).cloneRange();
+  }
 }
 
 /** Formatting bar shown while a text block is being edited. */
 export function RichTextToolbar() {
+
   const [state, setState] = useState({ bold: false, italic: false, underline: false, strike: false });
 
   useEffect(() => {
