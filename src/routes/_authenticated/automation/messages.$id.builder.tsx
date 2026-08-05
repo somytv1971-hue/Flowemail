@@ -356,11 +356,13 @@ function BlockPreview({
   editable,
   onStartEdit,
   onCommit,
+  onSetUrl,
 }: {
   block: Block;
   editable?: boolean;
   onStartEdit?: () => void;
   onCommit?: (content: string) => void;
+  onSetUrl?: (url: string) => void;
 }) {
   const { type } = block;
   const countdown = useCountdown(block.date);
