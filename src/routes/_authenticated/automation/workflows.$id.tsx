@@ -50,6 +50,7 @@ import {
   WorkflowRemoveContactPanel,
   type RemoveContactConfig,
 } from "@/components/workflow-remove-contact-panel";
+import { WorkflowWaitPanel, type WaitConfig } from "@/components/workflow-wait-panel";
 
 
 export const Route = createFileRoute("/_authenticated/automation/workflows/$id")({
@@ -339,7 +340,7 @@ function PropertiesPanel({
 }: {
   node: WorkflowNode | null;
   workflowName: string;
-  onConfigChange: (patch: SubscribeConfig & SendMessageConfig & MessageOpenedConfig & MoveToListConfig & RemoveContactConfig) => void;
+  onConfigChange: (patch: SubscribeConfig & SendMessageConfig & MessageOpenedConfig & MoveToListConfig & RemoveContactConfig & WaitConfig) => void;
 }) {
   if (!node) {
     return (
@@ -360,6 +361,10 @@ function PropertiesPanel({
 
   if (node.element === "a_move_list" || node.element === "moved_to_list" || node.element === "c_moved_list") {
     return <WorkflowMoveToListPanel config={node.config ?? {}} onChange={onConfigChange} />;
+  }
+
+  if (node.element === "a_wait") {
+    return <WorkflowWaitPanel config={node.config ?? {}} onChange={onConfigChange} />;
   }
 
   if (node.element === "a_remove_contact" || node.element === "a_remove_list") {
