@@ -38,6 +38,10 @@ import {
   type WorkflowNode,
   type WorkflowEdge,
 } from "@/components/workflow-canvas";
+import {
+  WorkflowMessageOpenedPanel,
+  type MessageOpenedConfig,
+} from "@/components/workflow-message-opened-panel";
 
 
 export const Route = createFileRoute("/_authenticated/automation/workflows/$id")({
