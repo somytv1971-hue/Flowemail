@@ -50,6 +50,27 @@ import {
   Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+const MEDIA_BUCKET = "email-assets";
+
+async function uploadMedia(file: File) {
+  const { data: auth } = await supabase.auth.getUser();
+  const userId = auth.user?.id;
+  if (!userId) throw new Error("Please sign in again to upload files");
+  const safeName = file.name.replace(/[^\w.-]+/g, "-");
+  const path = `${userId}/${Date.now()}-${safeName}`;
+  const { error } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .upload(path, file, { contentType: file.type || undefined, upsert: false });
+  if (error) throw new Error(error.message);
+  const { data, error: signError } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .createSignedUrl(path, 60 * 60 * 24 * 365);
+  if (signError || !data?.signedUrl) throw new Error(signError?.message || "Could not create URL");
+  return data.signedUrl;
+}
+
 
 export const Route = createFileRoute("/_authenticated/automation/messages/$id/builder")({
   head: () => ({
