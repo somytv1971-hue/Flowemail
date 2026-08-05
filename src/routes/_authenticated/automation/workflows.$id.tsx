@@ -236,7 +236,7 @@ function BuilderPage() {
 
             <div className="min-h-0 flex-1 overflow-y-auto">
               {tab === "add" ? (
-                <AddElementsPanel onAdd={addElement} />
+                <AddElementsPanel onAdd={(eid, label) => placeElement(eid, label)} />
               ) : (
                 <PropertiesPanel
                   node={selected}
