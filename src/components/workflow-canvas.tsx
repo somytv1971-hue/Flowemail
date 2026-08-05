@@ -1,7 +1,11 @@
 import { useCallback, useRef, useState } from "react";
-import { Trash2, CheckCircle2 } from "lucide-react";
+import { Trash2, CheckCircle2, Check, X } from "lucide-react";
 import { subscribeSummary, type SubscribeConfig } from "@/components/workflow-subscribe-panel";
 import { sendMessageSummary, type SendMessageConfig } from "@/components/workflow-send-message-panel";
+import {
+  messageOpenedSummary,
+  type MessageOpenedConfig,
+} from "@/components/workflow-message-opened-panel";
 import { ELEMENT_SECTIONS } from "@/lib/workflow-elements";
 
 export type WorkflowNode = {
@@ -12,15 +16,22 @@ export type WorkflowNode = {
   label?: string;
   x: number;
   y: number;
-  config?: SubscribeConfig & SendMessageConfig;
+  config?: SubscribeConfig & SendMessageConfig & MessageOpenedConfig;
 };
 
-export type WorkflowEdge = { id: string; source: string; target: string };
+export type WorkflowEdge = {
+  id: string;
+  source: string;
+  target: string;
+  branch?: "yes" | "no";
+};
 
 export const NODE_W = 300;
 export const NODE_H = 76;
 export const CANVAS_W = 2600;
 export const CANVAS_H = 1800;
+
+const CONDITION_ELEMENTS = ["opens_message", "c_message_opened"];
 
 const ALL_ITEMS = ELEMENT_SECTIONS.flatMap((s) => s.groups.flatMap((g) => g.items));
 
@@ -28,17 +39,29 @@ function iconFor(element: string) {
   return ALL_ITEMS.find((i) => i.id === element)?.icon;
 }
 
+function isConditionNode(node: WorkflowNode) {
+  return CONDITION_ELEMENTS.includes(node.element);
+}
+
 function nodeLabel(node: WorkflowNode, startLabel?: string) {
   if (node.type === "start")
     return subscribeSummary(node.config ?? {}) || `Subscribed via ${startLabel ?? "any list"}`;
   if (node.element === "a_send_message") return sendMessageSummary(node.config ?? {});
+  if (isConditionNode(node)) return messageOpenedSummary(node.config ?? {});
   return node.label ?? node.element;
+}
+
+function outAnchor(node: WorkflowNode, branch?: "yes" | "no") {
+  if (isConditionNode(node) && branch)
+    return { x: node.x + NODE_W * (branch === "yes" ? 0.32 : 0.68), y: node.y + NODE_H };
+  return { x: node.x + NODE_W / 2, y: node.y + NODE_H };
 }
 
 function path(x1: number, y1: number, x2: number, y2: number) {
   const dy = Math.max(40, Math.abs(y2 - y1) / 2);
   return `M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`;
 }
+
 
 export function WorkflowCanvas({
   nodes,
@@ -65,7 +88,12 @@ export function WorkflowCanvas({
 }) {
   const areaRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<{ id: string; dx: number; dy: number } | null>(null);
-  const [link, setLink] = useState<{ source: string; x: number; y: number } | null>(null);
+  const [link, setLink] = useState<{
+    source: string;
+    branch?: "yes" | "no";
+    x: number;
+    y: number;
+  } | null>(null);
   const [hoverEdge, setHoverEdge] = useState<string | null>(null);
 
   const toCanvas = useCallback(
@@ -94,11 +122,13 @@ export function WorkflowCanvas({
 
   const finishLink = (targetId?: string) => {
     if (link && targetId && targetId !== link.source) {
-      const exists = edges.some((e) => e.source === link.source && e.target === targetId);
+      const exists = edges.some(
+        (e) => e.source === link.source && e.target === targetId && e.branch === link.branch,
+      );
       if (!exists)
         onEdgesChange([
           ...edges,
-          { id: crypto.randomUUID(), source: link.source, target: targetId },
+          { id: crypto.randomUUID(), source: link.source, target: targetId, branch: link.branch },
         ]);
     }
     setLink(null);
@@ -143,7 +173,20 @@ export function WorkflowCanvas({
             const s = nodes.find((n) => n.id === edge.source);
             const t = nodes.find((n) => n.id === edge.target);
             if (!s || !t) return null;
-            const d = path(s.x + NODE_W / 2, s.y + NODE_H, t.x + NODE_W / 2, t.y);
+            const a = outAnchor(s, edge.branch);
+            const d = path(a.x, a.y, t.x + NODE_W / 2, t.y);
+            const stroke =
+              edge.branch === "yes"
+                ? "stroke-success"
+                : edge.branch === "no"
+                  ? "stroke-destructive"
+                  : "stroke-primary/60";
+            const marker =
+              edge.branch === "yes"
+                ? "url(#wf-arrow-yes)"
+                : edge.branch === "no"
+                  ? "url(#wf-arrow-no)"
+                  : "url(#wf-arrow)";
             return (
               <g key={edge.id} className="pointer-events-auto">
                 <path
@@ -160,8 +203,8 @@ export function WorkflowCanvas({
                   d={d}
                   fill="none"
                   strokeWidth={2}
-                  className={hoverEdge === edge.id ? "stroke-destructive" : "stroke-primary/60"}
-                  markerEnd="url(#wf-arrow)"
+                  className={hoverEdge === edge.id ? "stroke-destructive" : stroke}
+                  markerEnd={marker}
                 />
               </g>
             );
@@ -170,13 +213,20 @@ export function WorkflowCanvas({
             (() => {
               const s = nodes.find((n) => n.id === link.source);
               if (!s) return null;
+              const a = outAnchor(s, link.branch);
               return (
                 <path
-                  d={path(s.x + NODE_W / 2, s.y + NODE_H, link.x, link.y)}
+                  d={path(a.x, a.y, link.x, link.y)}
                   fill="none"
                   strokeWidth={2}
                   strokeDasharray="6 4"
-                  className="stroke-primary"
+                  className={
+                    link.branch === "yes"
+                      ? "stroke-success"
+                      : link.branch === "no"
+                        ? "stroke-destructive"
+                        : "stroke-primary"
+                  }
                 />
               );
             })()}
@@ -192,12 +242,36 @@ export function WorkflowCanvas({
             >
               <path d="M 0 0 L 10 5 L 0 10 z" className="fill-primary/60" />
             </marker>
+            <marker
+              id="wf-arrow-yes"
+              viewBox="0 0 10 10"
+              refX="8"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" className="fill-success" />
+            </marker>
+            <marker
+              id="wf-arrow-no"
+              viewBox="0 0 10 10"
+              refX="8"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" className="fill-destructive" />
+            </marker>
           </defs>
         </svg>
 
         {nodes.map((node) => {
           const Icon = iconFor(node.element);
           const isStart = node.type === "start";
+          const isCondition = isConditionNode(node);
+          const showNo = isCondition && (node.config?.wait_mode ?? "after_time") !== "never";
           return (
             <div
               key={node.id}
@@ -255,17 +329,52 @@ export function WorkflowCanvas({
                   </button>
                 )}
               </div>
-              {/* output handle */}
-              <div
-                data-handle="out"
-                title="Drag to connect"
-                className="absolute left-1/2 bottom-0 h-4 w-4 -translate-x-1/2 translate-y-1/2 cursor-crosshair rounded-full border-2 border-primary bg-background transition-transform hover:scale-125"
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  const p = toCanvas(e);
-                  setLink({ source: node.id, x: p.x, y: p.y });
-                }}
-              />
+              {/* output handles */}
+              {isCondition ? (
+                <>
+                  <button
+                    data-handle="out-yes"
+                    title="If yes"
+                    aria-label="If yes connector"
+                    className="absolute bottom-0 grid h-6 w-6 translate-y-1/2 place-items-center rounded-full border-2 border-background bg-success text-success-foreground shadow-sm transition-transform hover:scale-110"
+                    style={{ left: `${32}%`, marginLeft: -12 }}
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      const p = toCanvas(e);
+                      setLink({ source: node.id, branch: "yes", x: p.x, y: p.y });
+                    }}
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                  </button>
+                  {showNo && (
+                    <button
+                      data-handle="out-no"
+                      title="If no"
+                      aria-label="If no connector"
+                      className="absolute bottom-0 grid h-6 w-6 translate-y-1/2 place-items-center rounded-full border-2 border-background bg-destructive text-destructive-foreground shadow-sm transition-transform hover:scale-110"
+                      style={{ left: `${68}%`, marginLeft: -12 }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        const p = toCanvas(e);
+                        setLink({ source: node.id, branch: "no", x: p.x, y: p.y });
+                      }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div
+                  data-handle="out"
+                  title="Drag to connect"
+                  className="absolute left-1/2 bottom-0 h-4 w-4 -translate-x-1/2 translate-y-1/2 cursor-crosshair rounded-full border-2 border-primary bg-background transition-transform hover:scale-125"
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    const p = toCanvas(e);
+                    setLink({ source: node.id, x: p.x, y: p.y });
+                  }}
+                />
+              )}
             </div>
           );
         })}
