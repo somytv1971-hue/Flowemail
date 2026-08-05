@@ -252,8 +252,24 @@ function EditableText({
   className?: string;
   style?: React.CSSProperties;
 }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    node.innerText = value;
+    node.focus();
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    range.collapse(false);
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    // Only on mount: never overwrite while the user types.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <div
+      ref={ref}
       role="textbox"
       tabIndex={0}
       contentEditable
@@ -264,10 +280,6 @@ function EditableText({
       onKeyDown={(event) => {
         if (event.key === "Escape") event.currentTarget.blur();
         event.stopPropagation();
-      }}
-      ref={(node) => {
-        if (node && node.innerText !== value) node.innerText = value;
-        if (node && document.activeElement !== node) node.focus();
       }}
     />
   );
