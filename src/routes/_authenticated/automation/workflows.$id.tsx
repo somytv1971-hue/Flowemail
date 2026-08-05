@@ -167,7 +167,7 @@ function BuilderPage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => save.mutate({ name, nodes })}
+            onClick={() => save.mutate({ name, nodes, edges })}
             disabled={save.isPending}
           >
             <Save className="mr-1.5 h-4 w-4" /> Save
