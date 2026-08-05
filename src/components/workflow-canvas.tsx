@@ -20,7 +20,7 @@ export type WorkflowNode = {
   label?: string;
   x: number;
   y: number;
-  config?: SubscribeConfig & SendMessageConfig & MessageOpenedConfig;
+  config?: SubscribeConfig & SendMessageConfig & MessageOpenedConfig & MoveToListConfig;
 };
 
 export type WorkflowEdge = {
