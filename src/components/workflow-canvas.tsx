@@ -57,6 +57,8 @@ function nodeLabel(node: WorkflowNode, startLabel?: string) {
   if (node.element === "a_send_message") return sendMessageSummary(node.config ?? {});
   if (isConditionNode(node)) return messageOpenedSummary(node.config ?? {});
   if (node.element === "a_move_list") return moveToListSummary(node.config ?? {});
+  if (node.element === "a_remove_contact" || node.element === "a_remove_list")
+    return removeContactSummary(node.config ?? {});
   return node.label ?? node.element;
 }
 
