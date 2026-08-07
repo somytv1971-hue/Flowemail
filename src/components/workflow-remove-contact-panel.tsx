@@ -87,11 +87,18 @@ export function WorkflowRemoveContactPanel({
               <SelectValue placeholder="Choose a list" />
             </SelectTrigger>
             <SelectContent className="max-h-64">
-              {(lists as any[]).map((l) => (
-                <SelectItem key={l.id} value={l.id}>
-                  {l.name}
-                </SelectItem>
-              ))}
+              {(lists as any[]).length === 0 ? (
+                <div className="px-2 py-3 text-sm text-muted-foreground">
+                  No contact lists yet
+                </div>
+              ) : (
+                (lists as any[]).map((l) => (
+                  <SelectItem key={l.id} value={l.id}>
+                    {l.name}
+                    {typeof l.contact_count === "number" ? ` (${l.contact_count})` : ""}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>
