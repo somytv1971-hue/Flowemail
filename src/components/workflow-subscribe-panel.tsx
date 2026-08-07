@@ -41,13 +41,17 @@ export const TAB_COLORS = [
 export type SubscribeConfig = {
   list_mode?: "any" | "specific";
   list_id?: string | null;
+  list_name?: string | null;
   method?: string;
   include_existing?: boolean;
   tab_color?: string;
 };
 
 export function subscribeSummary(cfg: SubscribeConfig, listName?: string) {
-  const list = cfg.list_mode === "specific" ? (listName ?? "a specific list") : "any list";
+  const list =
+    cfg.list_mode === "specific"
+      ? (listName ?? cfg.list_name ?? "a specific list")
+      : "any list";
   const method =
     SUBSCRIPTION_METHODS.find((m) => m.id === (cfg.method ?? "any"))?.label ?? "Any method";
   return `Subscribed to ${list} via ${method.toLowerCase()}`;
