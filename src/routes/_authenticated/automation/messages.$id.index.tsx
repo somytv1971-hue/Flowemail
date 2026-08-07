@@ -22,6 +22,7 @@ import {
   Lock,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ContactListNameSelect } from "@/components/contact-list-select";
 
 export const Route = createFileRoute("/_authenticated/automation/messages/$id/")({
   head: () => ({
@@ -131,9 +132,9 @@ function MessageEditor() {
           </p>
           <div className="mt-4 flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Linked list</span>
-            <Input
+            <ContactListNameSelect
               value={form.list_name}
-              onChange={(e) => set("list_name", e.target.value)}
+              onChange={(name) => set("list_name", name)}
               className="h-8 w-56"
             />
           </div>

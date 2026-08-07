@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ContactListNameSelect } from "@/components/contact-list-select";
 import {
   Select,
   SelectContent,
@@ -142,9 +143,9 @@ function AutoresponderEditor() {
           </p>
           <div className="mt-4 flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Linked list</span>
-            <Input
+            <ContactListNameSelect
               value={form.list_name}
-              onChange={(e) => set("list_name", e.target.value)}
+              onChange={(name: string) => set("list_name", name)}
               className="h-8 w-56"
             />
           </div>

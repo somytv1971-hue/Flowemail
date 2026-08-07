@@ -41,13 +41,17 @@ export const TAB_COLORS = [
 export type SubscribeConfig = {
   list_mode?: "any" | "specific";
   list_id?: string | null;
+  list_name?: string | null;
   method?: string;
   include_existing?: boolean;
   tab_color?: string;
 };
 
 export function subscribeSummary(cfg: SubscribeConfig, listName?: string) {
-  const list = cfg.list_mode === "specific" ? (listName ?? "a specific list") : "any list";
+  const list =
+    cfg.list_mode === "specific"
+      ? (listName ?? cfg.list_name ?? "a specific list")
+      : "any list";
   const method =
     SUBSCRIPTION_METHODS.find((m) => m.id === (cfg.method ?? "any"))?.label ?? "Any method";
   return `Subscribed to ${list} via ${method.toLowerCase()}`;
@@ -93,21 +97,34 @@ export function WorkflowSubscribePanel({
         {listMode === "specific" && (
           <Select
             value={config.list_id ?? ""}
-            onValueChange={(v) => onChange({ list_id: v })}
+            onValueChange={(v) =>
+              onChange({
+                list_id: v,
+                list_name: (lists as any[]).find((l) => l.id === v)?.name ?? null,
+              })
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Choose a list" />
             </SelectTrigger>
-            <SelectContent>
-              {(lists as any[]).map((l) => (
-                <SelectItem key={l.id} value={l.id}>
-                  {l.name}
-                </SelectItem>
-              ))}
+            <SelectContent className="max-h-64">
+              {(lists as any[]).length === 0 ? (
+                <div className="px-2 py-3 text-sm text-muted-foreground">
+                  No contact lists yet
+                </div>
+              ) : (
+                (lists as any[]).map((l) => (
+                  <SelectItem key={l.id} value={l.id}>
+                    {l.name}
+                    {typeof l.contact_count === "number" ? ` (${l.contact_count})` : ""}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         )}
       </div>
+
 
       <div className="space-y-2">
         <Label>Select the subscription method:</Label>
