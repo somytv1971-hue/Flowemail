@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ContactListNameSelect } from "@/components/contact-list-select";
+import { SenderEmailSelect } from "@/components/sender-email-select";
 
 export const Route = createFileRoute("/_authenticated/automation/messages/$id/")({
   head: () => ({
@@ -151,32 +152,27 @@ function MessageEditor() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="from">"From" email address</Label>
-                <Input
-                  id="from"
+                <SenderEmailSelect
                   className="mt-1.5"
                   value={form.from_email}
-                  placeholder="you@yourdomain.com"
-                  onChange={(e) => set("from_email", e.target.value)}
+                  onChange={(email) => set("from_email", email)}
                 />
               </div>
               <div>
                 <Label htmlFor="reply">Reply-to</Label>
-                <Input
-                  id="reply"
+                <SenderEmailSelect
                   className="mt-1.5"
                   value={form.reply_to}
-                  placeholder="you@yourdomain.com"
-                  onChange={(e) => set("reply_to", e.target.value)}
+                  onChange={(email) => set("reply_to", email)}
                 />
               </div>
             </div>
-            <button
-              type="button"
-              className="mt-2 text-sm font-medium text-primary hover:underline"
-              onClick={() => toast.info("Add more sender addresses in a later release.")}
+            <Link
+              to="/emails-and-domains"
+              className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
             >
               Add another address
-            </button>
+            </Link>
 
             <div className="mt-4 flex gap-3 rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
