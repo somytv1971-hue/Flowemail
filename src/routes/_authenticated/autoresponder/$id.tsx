@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ContactListNameSelect } from "@/components/contact-list-select";
+import { SenderEmailSelect } from "@/components/sender-email-select";
 import {
   Select,
   SelectContent,
@@ -243,22 +244,18 @@ function AutoresponderEditor() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="from">"From" email address</Label>
-                <Input
-                  id="from"
+                <SenderEmailSelect
                   className="mt-1.5"
                   value={form.from_email}
-                  placeholder="you@yourdomain.com"
-                  onChange={(e) => set("from_email", e.target.value)}
+                  onChange={(email) => set("from_email", email)}
                 />
               </div>
               <div>
                 <Label htmlFor="reply">Reply-to</Label>
-                <Input
-                  id="reply"
+                <SenderEmailSelect
                   className="mt-1.5"
                   value={form.reply_to}
-                  placeholder="you@yourdomain.com"
-                  onChange={(e) => set("reply_to", e.target.value)}
+                  onChange={(email) => set("reply_to", email)}
                 />
               </div>
             </div>
