@@ -2,7 +2,11 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getAutoresponder, updateAutoresponder } from "@/lib/autoresponders.functions";
+import {
+  getAutoresponder,
+  updateAutoresponder,
+  ensureAutoresponderMessage,
+} from "@/lib/autoresponders.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +61,7 @@ function AutoresponderEditor() {
   const qc = useQueryClient();
   const get = useServerFn(getAutoresponder);
   const update = useServerFn(updateAutoresponder);
+  const ensureMessage = useServerFn(ensureAutoresponderMessage);
 
   const { data: row, isLoading } = useQuery({
     queryKey: ["autoresponder", id],
@@ -65,6 +70,8 @@ function AutoresponderEditor() {
 
   const [form, setForm] = useState<any>(null);
   const [editingName, setEditingName] = useState(false);
+  const [designing, setDesigning] = useState(false);
+
 
   useEffect(() => {
     if (row && !form) setForm(row);
@@ -103,7 +110,27 @@ function AutoresponderEditor() {
     track_clicks: form.track_clicks,
   });
 
+  const openDesign = {
+    isPending: designing,
+    mutate: async () => {
+      setDesigning(true);
+      try {
+        await update({ data: { id, ...payload() } });
+        const res = await ensureMessage({ data: { id } });
+        navigate({
+          to: "/automation/messages/$id/design",
+          params: { id: res.message_id },
+        });
+      } catch (e: any) {
+        toast.error(e?.message ?? "Could not open the message designer");
+      } finally {
+        setDesigning(false);
+      }
+    },
+  };
+
   const canFinish = form.subject?.trim() && form.from_email?.trim();
+
 
   return (
     <div className="mx-auto max-w-3xl pb-12">
@@ -274,24 +301,15 @@ function AutoresponderEditor() {
         <div className="p-8">
           <div className="flex items-start justify-between gap-4">
             <h2 className="font-display text-xl font-semibold">Design and content</h2>
-            {form.message_id ? (
-              <Button variant="outline" className="rounded-full" asChild>
-                <Link
-                  to="/automation/messages/$id/design"
-                  params={{ id: form.message_id }}
-                >
-                  Design message
-                </Link>
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                className="rounded-full"
-                onClick={() => toast.error("No message linked to this autoresponder.")}
-              >
-                Design message
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              className="rounded-full"
+              disabled={openDesign.isPending}
+              onClick={() => openDesign.mutate()}
+            >
+              {openDesign.isPending ? "Opening…" : "Design message"}
+            </Button>
+
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
             Start with a template or reuse content from an existing message. You can also use the
