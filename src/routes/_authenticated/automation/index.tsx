@@ -27,9 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, MoreVertical, Trash2, Zap, Info } from "lucide-react";
+import { Plus, Search, MoreVertical, Trash2, Zap, Info, Play } from "lucide-react";
 import { toast } from "sonner";
 import { AutomationMessagesTab } from "@/components/automation-messages-tab";
+import { AutomationEventsTab } from "@/components/automation-events-tab";
+import { startWorkflowNow } from "@/lib/sending.functions";
+
 
 
 export const Route = createFileRoute("/_authenticated/automation/")({
@@ -73,8 +76,9 @@ function AutomationPage() {
         </TabsContent>
 
         <TabsContent value="events" className="mt-6">
-          <ComingSoon title="Events" />
+          <AutomationEventsTab />
         </TabsContent>
+
       </Tabs>
     </div>
   );
@@ -181,6 +185,7 @@ function WorkflowRow({ w }: { w: any }) {
   const qc = useQueryClient();
   const update = useServerFn(updateWorkflow);
   const remove = useServerFn(deleteWorkflow);
+  const start = useServerFn(startWorkflowNow);
 
   const toggle = useMutation({
     mutationFn: (status: "published" | "paused") => update({ data: { id: w.id, status } }),
@@ -195,7 +200,18 @@ function WorkflowRow({ w }: { w: any }) {
     },
   });
 
+  const runNow = useMutation({
+    mutationFn: () => start({ data: { workflow_id: w.id } }),
+    onSuccess: (res: any) => {
+      toast.success(`${res.enrolled} contact(s) enrolled, ${res.processed} step(s) processed`);
+      qc.invalidateQueries({ queryKey: ["workflows"] });
+      qc.invalidateQueries({ queryKey: ["workflow-events"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const published = w.status === "published";
+
 
   return (
     <tr className="border-b last:border-0 hover:bg-muted/20">
@@ -239,10 +255,17 @@ function WorkflowRow({ w }: { w: any }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => runNow.mutate()}
+              disabled={!published || runNow.isPending}
+            >
+              <Play className="mr-2 h-4 w-4" /> {runNow.isPending ? "Running…" : "Run now"}
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => del.mutate()} className="text-destructive">
               <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
+
         </DropdownMenu>
       </td>
     </tr>

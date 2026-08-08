@@ -231,6 +231,108 @@ export type Database = {
           },
         ]
       }
+      email_sends: {
+        Row: {
+          autoresponder_id: string | null
+          click_count: number
+          clicked_at: string | null
+          contact_id: string | null
+          created_at: string
+          email: string
+          error: string | null
+          id: string
+          list_id: string | null
+          message_id: string | null
+          open_count: number
+          opened_at: string | null
+          run_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          unsubscribed_at: string | null
+          user_id: string
+          workflow_id: string | null
+        }
+        Insert: {
+          autoresponder_id?: string | null
+          click_count?: number
+          clicked_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          email: string
+          error?: string | null
+          id?: string
+          list_id?: string | null
+          message_id?: string | null
+          open_count?: number
+          opened_at?: string | null
+          run_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          unsubscribed_at?: string | null
+          user_id: string
+          workflow_id?: string | null
+        }
+        Update: {
+          autoresponder_id?: string | null
+          click_count?: number
+          clicked_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          email?: string
+          error?: string | null
+          id?: string
+          list_id?: string | null
+          message_id?: string | null
+          open_count?: number
+          opened_at?: string | null
+          run_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          unsubscribed_at?: string | null
+          user_id?: string
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sends_autoresponder_id_fkey"
+            columns: ["autoresponder_id"]
+            isOneToOne: false
+            referencedRelation: "autoresponders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "contact_lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "automation_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sender_emails: {
         Row: {
           confirm_token: string
@@ -269,6 +371,116 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      workflow_events: {
+        Row: {
+          created_at: string
+          detail: string
+          email: string | null
+          id: string
+          node_id: string | null
+          run_id: string | null
+          type: string
+          user_id: string
+          workflow_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: string
+          email?: string | null
+          id?: string
+          node_id?: string | null
+          run_id?: string | null
+          type: string
+          user_id: string
+          workflow_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: string
+          email?: string | null
+          id?: string
+          node_id?: string | null
+          run_id?: string | null
+          type?: string
+          user_id?: string
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_events_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_runs: {
+        Row: {
+          completed_at: string | null
+          contact_id: string | null
+          context: Json
+          created_at: string
+          email: string
+          error: string | null
+          id: string
+          last_send_id: string | null
+          node_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          wake_at: string
+          workflow_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          contact_id?: string | null
+          context?: Json
+          created_at?: string
+          email: string
+          error?: string | null
+          id?: string
+          last_send_id?: string | null
+          node_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          wake_at?: string
+          workflow_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          contact_id?: string | null
+          context?: Json
+          created_at?: string
+          email?: string
+          error?: string | null
+          id?: string
+          last_send_id?: string | null
+          node_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          wake_at?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_runs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workflows: {
         Row: {
