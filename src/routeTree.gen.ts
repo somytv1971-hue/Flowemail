@@ -19,7 +19,6 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated/contacts'
 import { Route as AuthenticatedAutoresponderIndexRouteImport } from './routes/_authenticated/autoresponder/index'
 import { Route as AuthenticatedAutomationIndexRouteImport } from './routes/_authenticated/automation/index'
-import { Route as ApiPublicDebugSendRouteImport } from './routes/api/public/debug-send'
 import { Route as AuthenticatedAutoresponderIdRouteImport } from './routes/_authenticated/autoresponder/$id'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as ApiPublicHooksWorkflowTickRouteImport } from './routes/api/public/hooks/workflow-tick'
@@ -83,11 +82,6 @@ const AuthenticatedAutomationIndexRoute =
     path: '/automation/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const ApiPublicDebugSendRoute = ApiPublicDebugSendRouteImport.update({
-  id: '/api/public/debug-send',
-  path: '/api/public/debug-send',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedAutoresponderIdRoute =
   AuthenticatedAutoresponderIdRouteImport.update({
     id: '/autoresponder/$id',
@@ -156,7 +150,6 @@ export interface FileRoutesByFullPath {
   '/emails-and-domains': typeof AuthenticatedEmailsAndDomainsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/autoresponder/$id': typeof AuthenticatedAutoresponderIdRoute
-  '/api/public/debug-send': typeof ApiPublicDebugSendRoute
   '/automation/': typeof AuthenticatedAutomationIndexRoute
   '/autoresponder/': typeof AuthenticatedAutoresponderIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
@@ -178,7 +171,6 @@ export interface FileRoutesByTo {
   '/emails-and-domains': typeof AuthenticatedEmailsAndDomainsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/autoresponder/$id': typeof AuthenticatedAutoresponderIdRoute
-  '/api/public/debug-send': typeof ApiPublicDebugSendRoute
   '/automation': typeof AuthenticatedAutomationIndexRoute
   '/autoresponder': typeof AuthenticatedAutoresponderIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
@@ -202,7 +194,6 @@ export interface FileRoutesById {
   '/_authenticated/emails-and-domains': typeof AuthenticatedEmailsAndDomainsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/autoresponder/$id': typeof AuthenticatedAutoresponderIdRoute
-  '/api/public/debug-send': typeof ApiPublicDebugSendRoute
   '/_authenticated/automation/': typeof AuthenticatedAutomationIndexRoute
   '/_authenticated/autoresponder/': typeof AuthenticatedAutoresponderIndexRoute
   '/_authenticated/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
@@ -226,7 +217,6 @@ export interface FileRouteTypes {
     | '/emails-and-domains'
     | '/reports'
     | '/autoresponder/$id'
-    | '/api/public/debug-send'
     | '/automation/'
     | '/autoresponder/'
     | '/automation/workflows/$id'
@@ -248,7 +238,6 @@ export interface FileRouteTypes {
     | '/emails-and-domains'
     | '/reports'
     | '/autoresponder/$id'
-    | '/api/public/debug-send'
     | '/automation'
     | '/autoresponder'
     | '/automation/workflows/$id'
@@ -271,7 +260,6 @@ export interface FileRouteTypes {
     | '/_authenticated/emails-and-domains'
     | '/_authenticated/reports'
     | '/_authenticated/autoresponder/$id'
-    | '/api/public/debug-send'
     | '/_authenticated/automation/'
     | '/_authenticated/autoresponder/'
     | '/_authenticated/automation/workflows/$id'
@@ -290,7 +278,6 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ConfirmSenderRoute: typeof ConfirmSenderRoute
-  ApiPublicDebugSendRoute: typeof ApiPublicDebugSendRoute
   ApiPublicHooksWorkflowTickRoute: typeof ApiPublicHooksWorkflowTickRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
   ApiPublicTClickSendIdRoute: typeof ApiPublicTClickSendIdRoute
@@ -368,13 +355,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/automation/'
       preLoaderRoute: typeof AuthenticatedAutomationIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/api/public/debug-send': {
-      id: '/api/public/debug-send'
-      path: '/api/public/debug-send'
-      fullPath: '/api/public/debug-send'
-      preLoaderRoute: typeof ApiPublicDebugSendRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/autoresponder/$id': {
       id: '/_authenticated/autoresponder/$id'
@@ -492,7 +472,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ConfirmSenderRoute: ConfirmSenderRoute,
-  ApiPublicDebugSendRoute: ApiPublicDebugSendRoute,
   ApiPublicHooksWorkflowTickRoute: ApiPublicHooksWorkflowTickRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
   ApiPublicTClickSendIdRoute: ApiPublicTClickSendIdRoute,
