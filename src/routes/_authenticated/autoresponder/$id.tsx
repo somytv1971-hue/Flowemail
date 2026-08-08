@@ -61,6 +61,7 @@ function AutoresponderEditor() {
   const qc = useQueryClient();
   const get = useServerFn(getAutoresponder);
   const update = useServerFn(updateAutoresponder);
+  const ensureMessage = useServerFn(ensureAutoresponderMessage);
 
   const { data: row, isLoading } = useQuery({
     queryKey: ["autoresponder", id],
@@ -69,6 +70,8 @@ function AutoresponderEditor() {
 
   const [form, setForm] = useState<any>(null);
   const [editingName, setEditingName] = useState(false);
+  const [designing, setDesigning] = useState(false);
+
 
   useEffect(() => {
     if (row && !form) setForm(row);
