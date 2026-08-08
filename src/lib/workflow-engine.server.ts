@@ -105,7 +105,7 @@ export async function enrollContacts(params: {
 
   const { error } = await supabaseAdmin
     .from("workflow_runs")
-    .upsert(rows, { onConflict: "workflow_id,contact_id", ignoreDuplicates: true });
+    .upsert(rows as never, { onConflict: "workflow_id,contact_id", ignoreDuplicates: true });
   if (error) throw new Error(error.message);
   return { enrolled: rows.length };
 }
