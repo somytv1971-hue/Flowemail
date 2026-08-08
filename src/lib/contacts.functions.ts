@@ -88,6 +88,15 @@ export const addContact = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
+
+    const { enrollContacts, tickWorkflows } = await import("@/lib/workflow-engine.server");
+    await enrollContacts({
+      userId: context.userId,
+      listId: data.list_id,
+      contactIds: [row.id],
+    });
+    await tickWorkflows(25);
+
     return row;
   });
 
@@ -115,12 +124,23 @@ export const addContactsBulk = createServerFn({ method: "POST" })
       }));
     if (rows.length === 0) return { inserted: 0 };
 
-    const { error } = await context.supabase
+    const { data: inserted, error } = await context.supabase
       .from("contacts")
-      .upsert(rows, { onConflict: "user_id,list_id,email" });
+      .upsert(rows, { onConflict: "user_id,list_id,email" })
+      .select("id");
     if (error) throw new Error(error.message);
+
+    const { enrollContacts, tickWorkflows } = await import("@/lib/workflow-engine.server");
+    await enrollContacts({
+      userId: context.userId,
+      listId: data.list_id,
+      contactIds: (inserted ?? []).map((r) => r.id),
+    });
+    await tickWorkflows(50);
+
     return { inserted: rows.length };
   });
+
 
 export const deleteContact = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
