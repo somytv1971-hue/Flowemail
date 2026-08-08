@@ -255,10 +255,17 @@ function WorkflowRow({ w }: { w: any }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => runNow.mutate()}
+              disabled={!published || runNow.isPending}
+            >
+              <Play className="mr-2 h-4 w-4" /> {runNow.isPending ? "Running…" : "Run now"}
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => del.mutate()} className="text-destructive">
               <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
+
         </DropdownMenu>
       </td>
     </tr>
