@@ -27,9 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, MoreVertical, Trash2, Zap, Info } from "lucide-react";
+import { Plus, Search, MoreVertical, Trash2, Zap, Info, Play } from "lucide-react";
 import { toast } from "sonner";
 import { AutomationMessagesTab } from "@/components/automation-messages-tab";
+import { AutomationEventsTab } from "@/components/automation-events-tab";
+import { startWorkflowNow } from "@/lib/sending.functions";
+
 
 
 export const Route = createFileRoute("/_authenticated/automation/")({
