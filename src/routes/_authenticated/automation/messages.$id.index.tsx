@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { ContactListNameSelect } from "@/components/contact-list-select";
 import { SenderEmailSelect } from "@/components/sender-email-select";
+import { SendMessageDialog } from "@/components/send-message-dialog";
 
 export const Route = createFileRoute("/_authenticated/automation/messages/$id/")({
   head: () => ({
