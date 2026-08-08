@@ -103,7 +103,27 @@ function AutoresponderEditor() {
     track_clicks: form.track_clicks,
   });
 
+  const openDesign = {
+    isPending: designing,
+    mutate: async () => {
+      setDesigning(true);
+      try {
+        await update({ data: { id, ...payload() } });
+        const res = await ensureMessage({ data: { id } });
+        navigate({
+          to: "/automation/messages/$id/design",
+          params: { id: res.message_id },
+        });
+      } catch (e: any) {
+        toast.error(e?.message ?? "Could not open the message designer");
+      } finally {
+        setDesigning(false);
+      }
+    },
+  };
+
   const canFinish = form.subject?.trim() && form.from_email?.trim();
+
 
   return (
     <div className="mx-auto max-w-3xl pb-12">
