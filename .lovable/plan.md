@@ -1,71 +1,64 @@
+# Make Flowmail actually send and automate
 
-## Scope (Phase 1)
+Right now every screen stores settings but nothing is executed. This plan adds a real
+sending engine, open/click tracking, and a workflow runtime so the nodes you built do work.
 
-Build a GetResponse-inspired email marketing dashboard. This phase focuses on the **Automation → Workflows** screen with real backend (CRUD), email/password auth, and the full navigation shell. Contacts, Reports, Automation Messages, Events, and Autoresponder pages will be scaffolded as placeholders and built out in later phases.
+## 1. Real email sending
 
-## Design Direction
+- A "Send now / Send test" action on an automation message renders its saved content
+  and sends it to every subscribed contact of the linked list, using the confirmed
+  sender address chosen in the From / Reply-to fields.
+- Each recipient gets a personal send record so we can track what happened to it.
+- Suppressed, unsubscribed and bounced contacts are skipped automatically.
 
-Modern SaaS dashboard — not a GetResponse clone. Clean, spacious, professional:
-- Deep indigo/violet primary with soft neutrals (light mode first, dark mode ready)
-- Rounded cards, subtle shadows, generous whitespace
-- Inter (body) + a distinctive display font for headings
-- Custom sidebar + topbar layout instead of GetResponse's cyan bar
+## 2. Open and click tracking sensors
 
-## Navigation Structure
+- Every outgoing email gets an invisible 1x1 tracking pixel and rewritten links,
+  both keyed to that recipient's send record.
+- Public endpoints record the open/click, then return the pixel or redirect.
+- Open rate / click rate / delivered on the message, autoresponder and workflow lists
+  become live numbers instead of zeros.
 
-```
-Topbar: Logo | Email Marketing ▾ | Contacts | Reports        | User menu
-                 └─ Automation
-                 └─ Autoresponder
-```
+## 3. Workflow runtime
 
-Routes:
-- `/` — public landing (marketing page, sign-in CTA)
-- `/auth` — login / signup
-- `/_authenticated/dashboard` — signed-in home (overview cards)
-- `/_authenticated/automation` — tabs: **Workflows** | Automation messages | Events
-- `/_authenticated/autoresponder` — placeholder
-- `/_authenticated/contacts` — placeholder
-- `/_authenticated/reports` — placeholder
+Contacts travel through the canvas as "runs":
 
-## Workflows Page (main deliverable)
+- **Subscribe node** — when a contact is added to (or imported into) the selected list,
+  a run starts at that node.
+- **Send message node** — sends the message picked in the node panel to that contact.
+- **Email was opened node** — waits for an open on the last sent message; branches
+  green (opened) or red (not opened after the configured wait window).
+- **Move to list node** — adds the contact to the target list.
+- **Remove contact node** — removes the contact from the configured source.
+- **Wait node** — pauses the run for the configured days/hours/minutes (and weekday /
+  exact-time variants).
 
-Matches the screenshot's information architecture with our own visual style:
-- Tabs: Workflows / Automation messages / Events
-- Toolbar: "Show statistics for" filter, "Sort by" dropdown, **Create workflow** button, search
-- Table columns: checkbox, Name, Status (published toggle), Created on, Start on, End on, Completed, In progress, row menu (⋯)
-- Row actions menu: Edit name, Duplicate, Delete
-- Empty state when no workflows
-- "Create workflow" opens a dialog: name + start date → inserts row, defaults published=true, completed=0, in_progress=0
+A scheduler tick runs periodically, wakes every run whose time has come, executes the
+next node, and stores the new position. Runs end at the last node.
 
-Automation messages & Events tabs render "Coming soon" placeholders in this phase.
+## 4. Statistics
 
-## Backend (Lovable Cloud)
+- **In progress** = runs currently sitting in the workflow, **Completed** = runs that
+  reached the end. Shown live on the workflow list and canvas bar.
+- Reports page replaced with real numbers: sends, delivered, opens, clicks, unsubscribes,
+  per message and per workflow, with a recent-activity table.
 
-**Auth:** email/password, no profiles table needed for this phase.
+## 5. Sweep of dead UI
 
-**Table:** `workflows`
-| column | type |
-|---|---|
-| id | uuid pk |
-| user_id | uuid → auth.users |
-| name | text |
-| status | text default 'published' |
-| start_on | timestamptz |
-| end_on | timestamptz nullable |
-| completed | int default 0 |
-| in_progress | int default 0 |
-| created_at | timestamptz default now() |
+Every remaining placeholder gets wired or removed: Events tab, Reports, contact segment
+tabs, autoresponder on/off actually gating sends, and node panels that currently save
+nothing.
 
-- Grants to `authenticated` + `service_role`
-- RLS: users can select/insert/update/delete only their own rows (`auth.uid() = user_id`)
+## Technical notes
 
-**Server functions** (`createServerFn` + `requireSupabaseAuth`): `listWorkflows`, `createWorkflow`, `updateWorkflow`, `deleteWorkflow`. Called from the Workflows page via TanStack Query.
-
-## Out of scope this phase
-
-Actual email sending, workflow-builder canvas, contact lists, campaign reports, autoresponder logic. These are the next milestones once the shell + workflows CRUD is approved.
-
----
-
-Approve and I'll build Phase 1.
+- New tables: `email_sends` (per-recipient send + open/click timestamps),
+  `workflow_runs` (contact position, wake time, status), `workflow_events` (audit log),
+  all with RLS scoped to `auth.uid()` and explicit GRANTs.
+- Sending goes through the existing managed email helper (`sendTemplateEmail` extended
+  with a raw-HTML path) using the verified `notify.digitalgoodsmart.xyz` sender domain.
+- Tracking + scheduler live under `src/routes/api/public/*` (open pixel, click redirect,
+  workflow tick with a shared-secret header); pg_cron calls the tick every minute.
+- Node execution logic in `src/lib/workflow-engine.server.ts`, invoked from the tick
+  route and from contact-subscribe server functions.
+- Rate: batches capped per tick so a large list drains over several ticks rather than
+  timing out.
