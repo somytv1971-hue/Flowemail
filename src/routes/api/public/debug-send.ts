@@ -10,6 +10,18 @@ export const Route = createFileRoute("/api/public/debug-send")({
         const purpose = url.searchParams.get("purpose") ?? "marketing";
         const apiKey = process.env["LOVABLE_API_KEY"];
         if (!apiKey) return Response.json({ ok: false, error: "no api key" });
+        const mid = url.searchParams.get("message");
+        if (mid) {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { sendMessageToContact } = await import("@/lib/workflow-engine.server");
+          const { data: message } = await supabaseAdmin
+            .from("automation_messages").select("*").eq("id", mid).single();
+          const r = await sendMessageToContact({
+            userId: message!.user_id, message: message as any,
+            contact: { email: to, first_name: "", last_name: "" },
+          });
+          return Response.json({ pathway: "engine", r });
+        }
         const { sendLovableEmail, EmailAPIError } = await import("@lovable.dev/email-js");
         try {
           const res = await sendLovableEmail(
