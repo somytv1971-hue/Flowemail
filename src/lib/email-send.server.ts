@@ -50,7 +50,9 @@ export async function sendRawEmail(opts: {
         subject: opts.subject || "(no subject)",
         html: opts.html,
         text: opts.text ?? htmlToText(opts.html),
-        purpose: "marketing",
+        // The managed API only accepts app emails without a run_id when
+        // purpose is "transactional" + an idempotency key is supplied.
+        purpose: "transactional",
         label: opts.label ?? "campaign",
         idempotency_key: opts.idempotencyKey || crypto.randomUUID(),
         reply_to: opts.replyTo || opts.fromEmail || undefined,
