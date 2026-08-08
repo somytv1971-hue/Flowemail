@@ -9,18 +9,25 @@ export const Route = createFileRoute("/api/public/hooks/workflow-tick")({
     handlers: {
       POST: async () => {
         try {
-          const { tickWorkflows } = await import("@/lib/workflow-engine.server");
+          const { tickWorkflows, tickAutoresponders } = await import(
+            "@/lib/workflow-engine.server"
+          );
           const result = await tickWorkflows(100);
-          return Response.json({ ok: true, ...result });
+          const auto = await tickAutoresponders();
+          return Response.json({ ok: true, ...result, autoresponderSends: auto.sent });
         } catch (error) {
           return Response.json({ ok: false, error: (error as Error).message }, { status: 500 });
         }
       },
       GET: async () => {
-        const { tickWorkflows } = await import("@/lib/workflow-engine.server");
+        const { tickWorkflows, tickAutoresponders } = await import(
+          "@/lib/workflow-engine.server"
+        );
         const result = await tickWorkflows(100);
-        return Response.json({ ok: true, ...result });
+        const auto = await tickAutoresponders();
+        return Response.json({ ok: true, ...result, autoresponderSends: auto.sent });
       },
     },
   },
 });
+
