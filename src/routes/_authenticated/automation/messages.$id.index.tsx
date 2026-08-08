@@ -286,7 +286,8 @@ function MessageEditor() {
             <LockedRow label="Google Analytics" />
           </div>
 
-          <div className="mt-8 flex justify-end gap-3">
+          <div className="mt-8 flex flex-wrap justify-end gap-3">
+            <SendMessageDialog messageId={id} disabled={!canFinish || save.isPending} />
             <Button
               variant="ghost"
               disabled={save.isPending}
@@ -298,6 +299,7 @@ function MessageEditor() {
             >
               Save progress
             </Button>
+
             <Button
               className="rounded-full"
               disabled={!canFinish || save.isPending}
