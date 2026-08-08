@@ -344,14 +344,21 @@ async function advanceRun(run: Json, wf: Json) {
         continue;
       }
 
+      // Mirror the panel defaults: when nothing is configured we wait 1 day
+      // for the open before taking the "no" branch.
+      const waitMode = (cfg.wait_mode as string) ?? "after_time";
+      const hasWindow =
+        cfg.days !== undefined || cfg.hours !== undefined || cfg.minutes !== undefined;
       const waitMs =
-        cfg.wait_mode === "never"
+        waitMode === "never"
           ? 0
-          : ((Number(cfg.days ?? 0) * 24 + Number(cfg.hours ?? 0)) * 60 +
-              Number(cfg.minutes ?? 0)) *
-            60_000;
+          : hasWindow
+            ? ((Number(cfg.days ?? 0) * 24 + Number(cfg.hours ?? 0)) * 60 +
+                Number(cfg.minutes ?? 0)) *
+              60_000
+            : 24 * 60 * 60_000;
 
-      if (cfg.wait_mode !== "never" && waitMs > 0) {
+      if (waitMode !== "never" && waitMs > 0) {
         if (!deadline) {
           const until = new Date(Date.now() + waitMs).toISOString();
           await supabaseAdmin
