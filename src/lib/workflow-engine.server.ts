@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { instrumentHtml, sendRawEmail } from "@/lib/email-send.server";
+import { renderMessageHtml } from "@/lib/builder-render";
 
 /** Server-only workflow runtime. Uses the service-role client. */
 
@@ -151,7 +152,8 @@ export async function sendMessageToContact(params: {
     .single();
   if (error) throw new Error(error.message);
 
-  const html = instrumentHtml(renderPersonal(message.content_html ?? "", contact), send.id, {
+  const rendered = renderMessageHtml(message.content_html ?? "");
+  const html = instrumentHtml(renderPersonal(rendered, contact), send.id, {
     clicks: message.track_clicks !== false,
   });
 
