@@ -2,7 +2,11 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getAutoresponder, updateAutoresponder } from "@/lib/autoresponders.functions";
+import {
+  getAutoresponder,
+  updateAutoresponder,
+  ensureAutoresponderMessage,
+} from "@/lib/autoresponders.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
