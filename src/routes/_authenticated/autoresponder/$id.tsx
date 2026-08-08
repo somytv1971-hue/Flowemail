@@ -274,24 +274,15 @@ function AutoresponderEditor() {
         <div className="p-8">
           <div className="flex items-start justify-between gap-4">
             <h2 className="font-display text-xl font-semibold">Design and content</h2>
-            {form.message_id ? (
-              <Button variant="outline" className="rounded-full" asChild>
-                <Link
-                  to="/automation/messages/$id/design"
-                  params={{ id: form.message_id }}
-                >
-                  Design message
-                </Link>
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                className="rounded-full"
-                onClick={() => toast.error("No message linked to this autoresponder.")}
-              >
-                Design message
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              className="rounded-full"
+              disabled={openDesign.isPending}
+              onClick={() => openDesign.mutate()}
+            >
+              {openDesign.isPending ? "Opening…" : "Design message"}
+            </Button>
+
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
             Start with a template or reuse content from an existing message. You can also use the
