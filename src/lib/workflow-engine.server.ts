@@ -398,21 +398,54 @@ async function advanceRun(run: Json, wf: Json) {
     /* --- Move / copy to list ------------------------------------------ */
     if (el === "a_move_list" || el === "a_copy_list") {
       const targetId = cfg.target_list_id as string | undefined;
-      if (targetId) {
-        await supabaseAdmin.from("contacts").upsert(
-          {
-            user_id: run.user_id,
-            list_id: targetId,
-            email: contact.email,
-            first_name: contact.first_name ?? "",
-            last_name: contact.last_name ?? "",
-            status: "subscribed",
-          },
-          { onConflict: "user_id,list_id,email" },
-        );
-        if (el === "a_move_list" && contact.list_id && contact.list_id !== targetId) {
-          await supabaseAdmin.from("contacts").delete().eq("id", contact.id);
+      if (targetId && contact.list_id !== targetId) {
+        // Is the contact already on the target list?
+        const { data: existing } = await supabaseAdmin
+          .from("contacts")
+          .select("id")
+          .eq("user_id", run.user_id)
+          .eq("list_id", targetId)
+          .eq("email", contact.email)
+          .maybeSingle();
+
+        let activeContactId = contact.id;
+
+        if (el === "a_move_list") {
+          if (existing) {
+            // Target row already exists: drop the source row, follow the target.
+            await supabaseAdmin.from("contacts").delete().eq("id", contact.id);
+            activeContactId = existing.id;
+          } else {
+            await supabaseAdmin
+              .from("contacts")
+              .update({ list_id: targetId })
+              .eq("id", contact.id);
+          }
+        } else if (!existing) {
+          const { data: copied } = await supabaseAdmin
+            .from("contacts")
+            .insert({
+              user_id: run.user_id,
+              list_id: targetId,
+              email: contact.email,
+              first_name: contact.first_name ?? "",
+              last_name: contact.last_name ?? "",
+              status: "subscribed",
+              tags: contact.tags ?? [],
+            })
+            .select("id")
+            .maybeSingle();
+          void copied;
         }
+
+        if (activeContactId !== run.contact_id) {
+          run.contact_id = activeContactId;
+          await supabaseAdmin
+            .from("workflow_runs")
+            .update({ contact_id: activeContactId })
+            .eq("id", run.id);
+        }
+
         await logEvent({
           user_id: run.user_id,
           workflow_id: wf.id,
@@ -422,10 +455,21 @@ async function advanceRun(run: Json, wf: Json) {
           detail: (cfg.target_list_name as string) ?? "",
           email: run.email,
         });
+      } else if (!targetId) {
+        await logEvent({
+          user_id: run.user_id,
+          workflow_id: wf.id,
+          run_id: run.id,
+          node_id: node.id,
+          type: "skipped",
+          detail: "No target list selected on the Move to list step",
+          email: run.email,
+        });
       }
       nodeId = nextNodeId(wf, node.id);
       continue;
     }
+
 
     /* --- Remove contact ----------------------------------------------- */
     if (el === "a_remove_contact" || el === "a_remove_list") {
