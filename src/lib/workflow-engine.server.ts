@@ -490,6 +490,82 @@ async function advanceRun(run: Json, wf: Json) {
 }
 
 /** Processes every run that is due. Called by the scheduler route. */
+/**
+ * Sends autoresponder messages: every active autoresponder mails its message to
+ * contacts of its list once they are `cycle_day` days past sign-up.
+ */
+export async function tickAutoresponders() {
+  const { data: responders } = await supabaseAdmin
+    .from("autoresponders")
+    .select("*")
+    .eq("status", "on");
+  if (!responders?.length) return { sent: 0 };
+
+  let sent = 0;
+  for (const ar of responders) {
+    if (!ar.message_id) continue;
+
+    const { data: message } = await supabaseAdmin
+      .from("automation_messages")
+      .select("*")
+      .eq("id", ar.message_id)
+      .maybeSingle();
+    if (!message) continue;
+
+    const { data: list } = await supabaseAdmin
+      .from("contact_lists")
+      .select("id")
+      .eq("user_id", ar.user_id)
+      .eq("name", ar.list_name)
+      .maybeSingle();
+
+    let q = supabaseAdmin
+      .from("contacts")
+      .select("*")
+      .eq("user_id", ar.user_id)
+      .eq("status", "subscribed")
+      .lte(
+        "created_at",
+        new Date(Date.now() - Number(ar.cycle_day ?? 0) * 86_400_000).toISOString(),
+      )
+      .limit(200);
+    if (list?.id) q = q.eq("list_id", list.id);
+    const { data: contacts } = await q;
+    if (!contacts?.length) continue;
+
+    const { data: already } = await supabaseAdmin
+      .from("email_sends")
+      .select("contact_id")
+      .eq("autoresponder_id", ar.id);
+    const done = new Set((already ?? []).map((r) => r.contact_id));
+
+    for (const contact of contacts) {
+      if (done.has(contact.id)) continue;
+      const res = await sendMessageToContact({
+        userId: ar.user_id,
+        message: {
+          ...message,
+          subject: ar.subject || message.subject,
+          from_email: ar.from_email || message.from_email,
+          reply_to: ar.reply_to || message.reply_to,
+        },
+        contact,
+        autoresponderId: ar.id,
+        listId: contact.list_id,
+      });
+      if (res.sent) sent++;
+    }
+
+    if (sent > 0) {
+      await supabaseAdmin
+        .from("autoresponders")
+        .update({ delivered: (ar.delivered ?? 0) + sent })
+        .eq("id", ar.id);
+    }
+  }
+  return { sent };
+}
+
 export async function tickWorkflows(limit = 50) {
   const { data: runs, error } = await supabaseAdmin
     .from("workflow_runs")
