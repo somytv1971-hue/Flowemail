@@ -21,9 +21,12 @@ import { Route as AuthenticatedAutoresponderIndexRouteImport } from './routes/_a
 import { Route as AuthenticatedAutomationIndexRouteImport } from './routes/_authenticated/automation/index'
 import { Route as AuthenticatedAutoresponderIdRouteImport } from './routes/_authenticated/autoresponder/$id'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
+import { Route as ApiPublicHooksWorkflowTickRouteImport } from './routes/api/public/hooks/workflow-tick'
 import { Route as AuthenticatedAutomationWorkflowsNewRouteImport } from './routes/_authenticated/automation/workflows.new'
 import { Route as AuthenticatedAutomationWorkflowsIdRouteImport } from './routes/_authenticated/automation/workflows.$id'
 import { Route as AuthenticatedAutomationMessagesIdIndexRouteImport } from './routes/_authenticated/automation/messages.$id.index'
+import { Route as ApiPublicTOpenSendIdRouteImport } from './routes/api/public/t/open.$sendId'
+import { Route as ApiPublicTClickSendIdRouteImport } from './routes/api/public/t/click.$sendId'
 import { Route as AuthenticatedAutomationMessagesIdDesignRouteImport } from './routes/_authenticated/automation/messages.$id.design'
 import { Route as AuthenticatedAutomationMessagesIdBuilderRouteImport } from './routes/_authenticated/automation/messages.$id.builder'
 
@@ -91,6 +94,12 @@ const LovableEmailTransactionalPreviewRoute =
     path: '/lovable/email/transactional/preview',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksWorkflowTickRoute =
+  ApiPublicHooksWorkflowTickRouteImport.update({
+    id: '/api/public/hooks/workflow-tick',
+    path: '/api/public/hooks/workflow-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedAutomationWorkflowsNewRoute =
   AuthenticatedAutomationWorkflowsNewRouteImport.update({
     id: '/automation/workflows/new',
@@ -109,6 +118,16 @@ const AuthenticatedAutomationMessagesIdIndexRoute =
     path: '/automation/messages/$id/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicTOpenSendIdRoute = ApiPublicTOpenSendIdRouteImport.update({
+  id: '/api/public/t/open/$sendId',
+  path: '/api/public/t/open/$sendId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicTClickSendIdRoute = ApiPublicTClickSendIdRouteImport.update({
+  id: '/api/public/t/click/$sendId',
+  path: '/api/public/t/click/$sendId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAutomationMessagesIdDesignRoute =
   AuthenticatedAutomationMessagesIdDesignRouteImport.update({
     id: '/automation/messages/$id/design',
@@ -135,9 +154,12 @@ export interface FileRoutesByFullPath {
   '/autoresponder/': typeof AuthenticatedAutoresponderIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
+  '/api/public/hooks/workflow-tick': typeof ApiPublicHooksWorkflowTickRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/automation/messages/$id/builder': typeof AuthenticatedAutomationMessagesIdBuilderRoute
   '/automation/messages/$id/design': typeof AuthenticatedAutomationMessagesIdDesignRoute
+  '/api/public/t/click/$sendId': typeof ApiPublicTClickSendIdRoute
+  '/api/public/t/open/$sendId': typeof ApiPublicTOpenSendIdRoute
   '/automation/messages/$id/': typeof AuthenticatedAutomationMessagesIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -153,9 +175,12 @@ export interface FileRoutesByTo {
   '/autoresponder': typeof AuthenticatedAutoresponderIndexRoute
   '/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
+  '/api/public/hooks/workflow-tick': typeof ApiPublicHooksWorkflowTickRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/automation/messages/$id/builder': typeof AuthenticatedAutomationMessagesIdBuilderRoute
   '/automation/messages/$id/design': typeof AuthenticatedAutomationMessagesIdDesignRoute
+  '/api/public/t/click/$sendId': typeof ApiPublicTClickSendIdRoute
+  '/api/public/t/open/$sendId': typeof ApiPublicTOpenSendIdRoute
   '/automation/messages/$id': typeof AuthenticatedAutomationMessagesIdIndexRoute
 }
 export interface FileRoutesById {
@@ -173,9 +198,12 @@ export interface FileRoutesById {
   '/_authenticated/autoresponder/': typeof AuthenticatedAutoresponderIndexRoute
   '/_authenticated/automation/workflows/$id': typeof AuthenticatedAutomationWorkflowsIdRoute
   '/_authenticated/automation/workflows/new': typeof AuthenticatedAutomationWorkflowsNewRoute
+  '/api/public/hooks/workflow-tick': typeof ApiPublicHooksWorkflowTickRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/_authenticated/automation/messages/$id/builder': typeof AuthenticatedAutomationMessagesIdBuilderRoute
   '/_authenticated/automation/messages/$id/design': typeof AuthenticatedAutomationMessagesIdDesignRoute
+  '/api/public/t/click/$sendId': typeof ApiPublicTClickSendIdRoute
+  '/api/public/t/open/$sendId': typeof ApiPublicTOpenSendIdRoute
   '/_authenticated/automation/messages/$id/': typeof AuthenticatedAutomationMessagesIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -193,9 +221,12 @@ export interface FileRouteTypes {
     | '/autoresponder/'
     | '/automation/workflows/$id'
     | '/automation/workflows/new'
+    | '/api/public/hooks/workflow-tick'
     | '/lovable/email/transactional/preview'
     | '/automation/messages/$id/builder'
     | '/automation/messages/$id/design'
+    | '/api/public/t/click/$sendId'
+    | '/api/public/t/open/$sendId'
     | '/automation/messages/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -211,9 +242,12 @@ export interface FileRouteTypes {
     | '/autoresponder'
     | '/automation/workflows/$id'
     | '/automation/workflows/new'
+    | '/api/public/hooks/workflow-tick'
     | '/lovable/email/transactional/preview'
     | '/automation/messages/$id/builder'
     | '/automation/messages/$id/design'
+    | '/api/public/t/click/$sendId'
+    | '/api/public/t/open/$sendId'
     | '/automation/messages/$id'
   id:
     | '__root__'
@@ -230,9 +264,12 @@ export interface FileRouteTypes {
     | '/_authenticated/autoresponder/'
     | '/_authenticated/automation/workflows/$id'
     | '/_authenticated/automation/workflows/new'
+    | '/api/public/hooks/workflow-tick'
     | '/lovable/email/transactional/preview'
     | '/_authenticated/automation/messages/$id/builder'
     | '/_authenticated/automation/messages/$id/design'
+    | '/api/public/t/click/$sendId'
+    | '/api/public/t/open/$sendId'
     | '/_authenticated/automation/messages/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -241,7 +278,10 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ConfirmSenderRoute: typeof ConfirmSenderRoute
+  ApiPublicHooksWorkflowTickRoute: typeof ApiPublicHooksWorkflowTickRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
+  ApiPublicTClickSendIdRoute: typeof ApiPublicTClickSendIdRoute
+  ApiPublicTOpenSendIdRoute: typeof ApiPublicTOpenSendIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -330,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/workflow-tick': {
+      id: '/api/public/hooks/workflow-tick'
+      path: '/api/public/hooks/workflow-tick'
+      fullPath: '/api/public/hooks/workflow-tick'
+      preLoaderRoute: typeof ApiPublicHooksWorkflowTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/automation/workflows/new': {
       id: '/_authenticated/automation/workflows/new'
       path: '/automation/workflows/new'
@@ -350,6 +397,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/automation/messages/$id/'
       preLoaderRoute: typeof AuthenticatedAutomationMessagesIdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/t/open/$sendId': {
+      id: '/api/public/t/open/$sendId'
+      path: '/api/public/t/open/$sendId'
+      fullPath: '/api/public/t/open/$sendId'
+      preLoaderRoute: typeof ApiPublicTOpenSendIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/t/click/$sendId': {
+      id: '/api/public/t/click/$sendId'
+      path: '/api/public/t/click/$sendId'
+      fullPath: '/api/public/t/click/$sendId'
+      preLoaderRoute: typeof ApiPublicTClickSendIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/automation/messages/$id/design': {
       id: '/_authenticated/automation/messages/$id/design'
@@ -411,18 +472,11 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ConfirmSenderRoute: ConfirmSenderRoute,
+  ApiPublicHooksWorkflowTickRoute: ApiPublicHooksWorkflowTickRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
+  ApiPublicTClickSendIdRoute: ApiPublicTClickSendIdRoute,
+  ApiPublicTOpenSendIdRoute: ApiPublicTOpenSendIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
