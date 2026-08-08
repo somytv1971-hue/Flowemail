@@ -76,8 +76,9 @@ function AutomationPage() {
         </TabsContent>
 
         <TabsContent value="events" className="mt-6">
-          <ComingSoon title="Events" />
+          <AutomationEventsTab />
         </TabsContent>
+
       </Tabs>
     </div>
   );
@@ -184,6 +185,7 @@ function WorkflowRow({ w }: { w: any }) {
   const qc = useQueryClient();
   const update = useServerFn(updateWorkflow);
   const remove = useServerFn(deleteWorkflow);
+  const start = useServerFn(startWorkflowNow);
 
   const toggle = useMutation({
     mutationFn: (status: "published" | "paused") => update({ data: { id: w.id, status } }),
@@ -198,7 +200,18 @@ function WorkflowRow({ w }: { w: any }) {
     },
   });
 
+  const runNow = useMutation({
+    mutationFn: () => start({ data: { workflow_id: w.id } }),
+    onSuccess: (res: any) => {
+      toast.success(`${res.enrolled} contact(s) enrolled, ${res.processed} step(s) processed`);
+      qc.invalidateQueries({ queryKey: ["workflows"] });
+      qc.invalidateQueries({ queryKey: ["workflow-events"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const published = w.status === "published";
+
 
   return (
     <tr className="border-b last:border-0 hover:bg-muted/20">
