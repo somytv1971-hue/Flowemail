@@ -777,22 +777,14 @@ function BuilderPage() {
           </button>
           <button
             type="button"
-            onClick={() =>
-              save.mutate(undefined, {
-                onSuccess: () => navigate({ to: "/automation/messages/$id", params: { id } }),
-              })
-            }
+            onClick={() => save.mutate(undefined, { onSuccess: exitToOwner })}
             className="text-sm font-medium text-primary hover:underline"
           >
             Save and exit
           </button>
           <Button
             className="rounded-full px-6"
-            onClick={() =>
-              save.mutate(undefined, {
-                onSuccess: () => navigate({ to: "/automation/messages/$id", params: { id } }),
-              })
-            }
+            onClick={() => save.mutate(undefined, { onSuccess: exitToOwner })}
           >
             Next
           </Button>
