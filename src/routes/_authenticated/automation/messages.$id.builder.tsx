@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getAutomationMessage, updateAutomationMessage } from "@/lib/automation-messages.functions";
+import { getAutoresponderByMessage } from "@/lib/autoresponders.functions";
 import { Button } from "@/components/ui/button";
 import { RichTextToolbar } from "@/components/rich-text-toolbar";
 
@@ -576,11 +577,28 @@ function BuilderPage() {
   const navigate = useNavigate();
   const get = useServerFn(getAutomationMessage);
   const update = useServerFn(updateAutomationMessage);
+  const getOwner = useServerFn(getAutoresponderByMessage);
 
   const { data: msg } = useQuery({
     queryKey: ["automation-message", id],
     queryFn: () => get({ data: { id } }),
   });
+
+  /** Autoresponder that owns this message, when the editor was opened from one. */
+  const { data: owner } = useQuery({
+    queryKey: ["message-autoresponder", id],
+    queryFn: () => getOwner({ data: { message_id: id } }),
+  });
+
+  const exitToOwner = () => {
+    const autoresponderId = owner?.autoresponder_id;
+    if (autoresponderId) {
+      navigate({ to: "/autoresponder/$id", params: { id: autoresponderId } });
+      return;
+    }
+    navigate({ to: "/automation/messages/$id", params: { id } });
+  };
+
 
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -759,22 +777,14 @@ function BuilderPage() {
           </button>
           <button
             type="button"
-            onClick={() =>
-              save.mutate(undefined, {
-                onSuccess: () => navigate({ to: "/automation/messages/$id", params: { id } }),
-              })
-            }
+            onClick={() => save.mutate(undefined, { onSuccess: exitToOwner })}
             className="text-sm font-medium text-primary hover:underline"
           >
             Save and exit
           </button>
           <Button
             className="rounded-full px-6"
-            onClick={() =>
-              save.mutate(undefined, {
-                onSuccess: () => navigate({ to: "/automation/messages/$id", params: { id } }),
-              })
-            }
+            onClick={() => save.mutate(undefined, { onSuccess: exitToOwner })}
           >
             Next
           </Button>

@@ -142,3 +142,17 @@ export const ensureAutoresponderMessage = createServerFn({ method: "POST" })
 
     return { message_id: msg.id as string };
   });
+
+/** Returns the autoresponder linked to a given automation message, if any. */
+export const getAutoresponderByMessage = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ message_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("autoresponders")
+      .select("id")
+      .eq("message_id", data.message_id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { autoresponder_id: (row?.id as string | undefined) ?? null };
+  });
