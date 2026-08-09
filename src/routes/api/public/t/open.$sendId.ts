@@ -13,7 +13,7 @@ export const Route = createFileRoute("/api/public/t/open/$sendId")({
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const { data: row } = await supabaseAdmin
             .from("email_sends")
-            .select("id,open_count,opened_at")
+            .select("id,open_count,opened_at,run_id")
             .eq("id", params.sendId)
             .maybeSingle();
           if (row) {
@@ -24,6 +24,19 @@ export const Route = createFileRoute("/api/public/t/open/$sendId")({
                 open_count: (row.open_count ?? 0) + 1,
               })
               .eq("id", row.id);
+
+            // Wake the workflow run immediately so open-conditions (and the
+            // "yes" branch steps such as Move to list) run without waiting for
+            // the configured deadline.
+            if (row.run_id) {
+              await supabaseAdmin
+                .from("workflow_runs")
+                .update({ status: "active", wake_at: new Date().toISOString() })
+                .eq("id", row.run_id)
+                .in("status", ["waiting", "active"]);
+              const { tickWorkflows } = await import("@/lib/workflow-engine.server");
+              await tickWorkflows(20);
+            }
           }
         } catch {
           // never break image loading in the recipient's inbox
