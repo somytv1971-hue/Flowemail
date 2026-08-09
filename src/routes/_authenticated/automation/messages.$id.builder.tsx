@@ -577,11 +577,28 @@ function BuilderPage() {
   const navigate = useNavigate();
   const get = useServerFn(getAutomationMessage);
   const update = useServerFn(updateAutomationMessage);
+  const getOwner = useServerFn(getAutoresponderByMessage);
 
   const { data: msg } = useQuery({
     queryKey: ["automation-message", id],
     queryFn: () => get({ data: { id } }),
   });
+
+  /** Autoresponder that owns this message, when the editor was opened from one. */
+  const { data: owner } = useQuery({
+    queryKey: ["message-autoresponder", id],
+    queryFn: () => getOwner({ data: { message_id: id } }),
+  });
+
+  const exitToOwner = () => {
+    const autoresponderId = owner?.autoresponder_id;
+    if (autoresponderId) {
+      navigate({ to: "/autoresponder/$id", params: { id: autoresponderId } });
+      return;
+    }
+    navigate({ to: "/automation/messages/$id", params: { id } });
+  };
+
 
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
