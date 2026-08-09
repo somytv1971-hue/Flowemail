@@ -12,7 +12,7 @@ export const Route = createFileRoute("/api/public/t/click/$sendId")({
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const { data: row } = await supabaseAdmin
             .from("email_sends")
-            .select("id,click_count,clicked_at,opened_at,open_count")
+            .select("id,click_count,clicked_at,opened_at,open_count,run_id")
             .eq("id", params.sendId)
             .maybeSingle();
           if (row) {
@@ -27,6 +27,16 @@ export const Route = createFileRoute("/api/public/t/click/$sendId")({
                 open_count: row.opened_at ? row.open_count : (row.open_count ?? 0) + 1,
               })
               .eq("id", row.id);
+
+            if (row.run_id) {
+              await supabaseAdmin
+                .from("workflow_runs")
+                .update({ status: "active", wake_at: now })
+                .eq("id", row.run_id)
+                .in("status", ["waiting", "active"]);
+              const { tickWorkflows } = await import("@/lib/workflow-engine.server");
+              await tickWorkflows(20);
+            }
           }
         } catch {
           // always redirect, even if tracking fails
