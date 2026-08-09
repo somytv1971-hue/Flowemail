@@ -10,7 +10,14 @@ export const listAutomationMessages = createServerFn({ method: "GET" })
       .select("*")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+
+    // Messages that belong to an autoresponder live in the Autoresponder panel.
+    const { data: linked } = await context.supabase
+      .from("autoresponders")
+      .select("message_id")
+      .not("message_id", "is", null);
+    const owned = new Set((linked ?? []).map((r) => r.message_id as string));
+    return (data ?? []).filter((m) => !owned.has(m.id));
   });
 
 export const getAutomationMessage = createServerFn({ method: "GET" })
