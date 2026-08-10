@@ -111,6 +111,51 @@ export async function enrollContacts(params: {
   return { enrolled: rows.length };
 }
 
+/** Enrolls existing subscribed contacts when a Subscribe trigger requests it. */
+export async function enrollExistingContactsForWorkflow(params: {
+  userId: string;
+  workflowId: string;
+}) {
+  const { data: workflow, error: workflowError } = await supabaseAdmin
+    .from("workflows")
+    .select("*")
+    .eq("id", params.workflowId)
+    .eq("user_id", params.userId)
+    .maybeSingle();
+  if (workflowError) throw new Error(workflowError.message);
+  if (!workflow || workflow.status !== "published") return { enrolled: 0 };
+
+  const start = startNode(workflow);
+  const cfg = (start?.config ?? {}) as Json;
+  if (!start || cfg.include_existing !== true) return { enrolled: 0 };
+
+  let listsQuery = supabaseAdmin
+    .from("contact_lists")
+    .select("id")
+    .eq("user_id", params.userId);
+  if (cfg.list_mode === "specific" && cfg.list_id) listsQuery = listsQuery.eq("id", cfg.list_id);
+  const { data: lists, error: listsError } = await listsQuery;
+  if (listsError) throw new Error(listsError.message);
+
+  let enrolled = 0;
+  for (const list of lists ?? []) {
+    const { data: contacts, error: contactsError } = await supabaseAdmin
+      .from("contacts")
+      .select("id")
+      .eq("user_id", params.userId)
+      .eq("list_id", list.id)
+      .eq("status", "subscribed");
+    if (contactsError) throw new Error(contactsError.message);
+    const result = await enrollContacts({
+      userId: params.userId,
+      listId: list.id,
+      contactIds: (contacts ?? []).map((contact) => contact.id),
+    });
+    enrolled += result.enrolled;
+  }
+  return { enrolled };
+}
+
 /* ------------------------------------------------------------------ */
 /* Sending                                                             */
 /* ------------------------------------------------------------------ */
@@ -500,6 +545,7 @@ async function advanceRun(run: Json, wf: Json) {
     if (el === "a_remove_contact" || el === "a_remove_list") {
       const from = (cfg.remove_from as string) ?? "lists";
       let removeError: { message: string } | null = null;
+      let removedActiveContact = false;
       if (from === "account") {
         const { error } = await supabaseAdmin
           .from("contacts")
@@ -507,6 +553,7 @@ async function advanceRun(run: Json, wf: Json) {
           .eq("user_id", run.user_id)
           .eq("email", contact.email);
         removeError = error;
+        removedActiveContact = true;
       } else if (from === "lists" && cfg.list_id) {
         const { error } = await supabaseAdmin
           .from("contacts")
@@ -515,9 +562,15 @@ async function advanceRun(run: Json, wf: Json) {
           .eq("list_id", cfg.list_id)
           .eq("email", contact.email);
         removeError = error;
+        removedActiveContact = cfg.list_id === contact.list_id;
+      } else if (from === "cycle") {
+        // Leaving an autoresponder/workflow cycle must not delete the contact
+        // from the user's address book.
+        removedActiveContact = true;
       } else {
         const { error } = await supabaseAdmin.from("contacts").delete().eq("id", contact.id);
         removeError = error;
+        removedActiveContact = true;
       }
       if (removeError) throw new Error(`Remove contact failed: ${removeError.message}`);
       await logEvent({
@@ -529,7 +582,9 @@ async function advanceRun(run: Json, wf: Json) {
         detail: from,
         email: run.email,
       });
-      return finish(run.id, "completed");
+      if (removedActiveContact) return finish(run.id, "completed");
+      nodeId = nextNodeId(wf, node.id);
+      continue;
     }
 
     /* --- Wait ---------------------------------------------------------- */
