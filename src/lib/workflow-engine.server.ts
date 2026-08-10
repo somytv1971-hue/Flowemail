@@ -330,6 +330,7 @@ async function advanceRun(run: Json, wf: Json) {
       }
       const { data: sends } = await query;
       const opened = Boolean(sends?.[0]?.opened_at);
+      const waitMode = (cfg.wait_mode as string) ?? "after_time";
 
       if (opened) {
         context = { ...context, [deadlineKey]: undefined };
@@ -364,7 +365,6 @@ async function advanceRun(run: Json, wf: Json) {
 
       // Mirror the panel defaults: when nothing is configured we wait 1 day
       // for the open before taking the "no" branch.
-      const waitMode = (cfg.wait_mode as string) ?? "after_time";
       const hasWindow =
         cfg.days !== undefined || cfg.hours !== undefined || cfg.minutes !== undefined;
       const waitMs =
