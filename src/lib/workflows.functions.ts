@@ -79,6 +79,13 @@ export const updateWorkflow = createServerFn({ method: "POST" })
       .update(patch)
       .eq("id", id);
     if (error) throw new Error(error.message);
+    if (patch.nodes || patch.status === "published") {
+      const { enrollExistingContactsForWorkflow, tickWorkflows } = await import(
+        "@/lib/workflow-engine.server"
+      );
+      await enrollExistingContactsForWorkflow({ userId: context.userId, workflowId: id });
+      await tickWorkflows(100);
+    }
     return { ok: true };
   });
 

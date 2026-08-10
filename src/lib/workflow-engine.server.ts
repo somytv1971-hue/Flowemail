@@ -111,6 +111,51 @@ export async function enrollContacts(params: {
   return { enrolled: rows.length };
 }
 
+/** Enrolls existing subscribed contacts when a Subscribe trigger requests it. */
+export async function enrollExistingContactsForWorkflow(params: {
+  userId: string;
+  workflowId: string;
+}) {
+  const { data: workflow, error: workflowError } = await supabaseAdmin
+    .from("workflows")
+    .select("*")
+    .eq("id", params.workflowId)
+    .eq("user_id", params.userId)
+    .maybeSingle();
+  if (workflowError) throw new Error(workflowError.message);
+  if (!workflow || workflow.status !== "published") return { enrolled: 0 };
+
+  const start = startNode(workflow);
+  const cfg = (start?.config ?? {}) as Json;
+  if (!start || cfg.include_existing !== true) return { enrolled: 0 };
+
+  let listsQuery = supabaseAdmin
+    .from("contact_lists")
+    .select("id")
+    .eq("user_id", params.userId);
+  if (cfg.list_mode === "specific" && cfg.list_id) listsQuery = listsQuery.eq("id", cfg.list_id);
+  const { data: lists, error: listsError } = await listsQuery;
+  if (listsError) throw new Error(listsError.message);
+
+  let enrolled = 0;
+  for (const list of lists ?? []) {
+    const { data: contacts, error: contactsError } = await supabaseAdmin
+      .from("contacts")
+      .select("id")
+      .eq("user_id", params.userId)
+      .eq("list_id", list.id)
+      .eq("status", "subscribed");
+    if (contactsError) throw new Error(contactsError.message);
+    const result = await enrollContacts({
+      userId: params.userId,
+      listId: list.id,
+      contactIds: (contacts ?? []).map((contact) => contact.id),
+    });
+    enrolled += result.enrolled;
+  }
+  return { enrolled };
+}
+
 /* ------------------------------------------------------------------ */
 /* Sending                                                             */
 /* ------------------------------------------------------------------ */
@@ -184,7 +229,7 @@ export async function sendMessageToContact(params: {
 /* ------------------------------------------------------------------ */
 
 function waitMillis(cfg: Json) {
-  const days = Number(cfg.wait_days ?? 0);
+  const days = Number(cfg.wait_days ?? 1);
   const hours = Number(cfg.wait_hours ?? 0);
   const minutes = Number(cfg.wait_minutes ?? 0);
   const ms = ((days * 24 + hours) * 60 + minutes) * 60_000;
@@ -197,10 +242,12 @@ function nextWakeForWait(cfg: Json): Date {
 
   if (type === "for") {
     let target = new Date(now.getTime() + waitMillis(cfg));
-    const weekdays: string[] = cfg.wait_weekdays ?? [];
+    const weekdays: string[] = (cfg.wait_weekdays ?? []).map((day: unknown) =>
+      String(day).slice(0, 3).toLowerCase(),
+    );
     if (weekdays.length > 0) {
       const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-      for (let i = 0; i < 7 && !weekdays.includes(map[target.getDay()]!); i++) {
+      for (let i = 0; i < 7 && !weekdays.includes(map[target.getDay()] ?? ""); i++) {
         target = new Date(target.getTime() + 86_400_000);
       }
     }
@@ -241,6 +288,47 @@ async function finish(runId: string, status: "completed" | "failed", error?: str
     .eq("id", runId);
 }
 
+async function mergeContactRuns(sourceContactId: string, targetContactId: string, currentRunId: string) {
+  const { data: sourceRuns, error: sourceRunsError } = await supabaseAdmin
+    .from("workflow_runs")
+    .select("id,workflow_id,status")
+    .eq("contact_id", sourceContactId);
+  if (sourceRunsError) throw new Error(sourceRunsError.message);
+
+  const workflowIds = [...new Set((sourceRuns ?? []).map((sourceRun) => sourceRun.workflow_id))];
+  const { data: targetRuns, error: targetRunsError } = workflowIds.length
+    ? await supabaseAdmin
+        .from("workflow_runs")
+        .select("id,workflow_id,status")
+        .eq("contact_id", targetContactId)
+        .in("workflow_id", workflowIds)
+    : { data: [], error: null };
+  if (targetRunsError) throw new Error(targetRunsError.message);
+
+  const targetByWorkflow = new Map(
+    (targetRuns ?? []).map((targetRun) => [targetRun.workflow_id, targetRun]),
+  );
+  for (const sourceRun of sourceRuns ?? []) {
+    const duplicate = targetByWorkflow.get(sourceRun.workflow_id);
+    if (duplicate) {
+      // Keep the currently executing run; otherwise keep the existing target
+      // run and remove only the duplicate enrollment.
+      const duplicateId = sourceRun.id === currentRunId ? duplicate.id : sourceRun.id;
+      const { error: duplicateError } = await supabaseAdmin
+        .from("workflow_runs")
+        .delete()
+        .eq("id", duplicateId);
+      if (duplicateError) throw new Error(duplicateError.message);
+      if (sourceRun.id !== currentRunId) continue;
+    }
+    const { error: reparentError } = await supabaseAdmin
+      .from("workflow_runs")
+      .update({ contact_id: targetContactId })
+      .eq("id", sourceRun.id);
+    if (reparentError) throw new Error(reparentError.message);
+  }
+}
+
 /** Executes one run until it must wait, ends, or hits the step cap. */
 async function advanceRun(run: Json, wf: Json) {
   let nodeId: string | null = run.node_id;
@@ -274,33 +362,36 @@ async function advanceRun(run: Json, wf: Json) {
           detail: "No message selected on the Send message step",
           email: run.email,
         });
+        return finish(run.id, "failed", "No message selected on the Send message step");
       } else {
-        const { data: message } = await supabaseAdmin
+        const { data: message, error: messageError } = await supabaseAdmin
           .from("automation_messages")
           .select("*")
           .eq("id", cfg.message_id)
+          .eq("user_id", run.user_id)
           .maybeSingle();
-        if (message) {
-          const res = await sendMessageToContact({
-            userId: run.user_id,
-            message,
-            contact,
-            workflowId: wf.id,
-            runId: run.id,
-            listId: contact.list_id,
-          });
-          lastSendId = res.sendId;
-          context = { ...context, last_message_id: message.id };
-          await logEvent({
-            user_id: run.user_id,
-            workflow_id: wf.id,
-            run_id: run.id,
-            node_id: node.id,
-            type: res.sent ? "message_sent" : "message_failed",
-            detail: res.sent ? (message.subject ?? "") : (res.reason ?? ""),
-            email: run.email,
-          });
-        }
+        if (messageError) throw new Error(messageError.message);
+        if (!message) return finish(run.id, "failed", "Selected automation message no longer exists");
+        const res = await sendMessageToContact({
+          userId: run.user_id,
+          message,
+          contact,
+          workflowId: wf.id,
+          runId: run.id,
+          listId: contact.list_id,
+        });
+        lastSendId = res.sendId;
+        context = { ...context, last_message_id: message.id };
+        await logEvent({
+          user_id: run.user_id,
+          workflow_id: wf.id,
+          run_id: run.id,
+          node_id: node.id,
+          type: res.sent ? "message_sent" : "message_failed",
+          detail: res.sent ? (message.subject ?? "") : (res.reason ?? ""),
+          email: run.email,
+        });
+        if (!res.sent) return finish(run.id, "failed", res.reason ?? "Message delivery failed");
       }
       nodeId = nextNodeId(wf, node.id);
       continue;
@@ -326,8 +417,10 @@ async function advanceRun(run: Json, wf: Json) {
           .order("created_at", { ascending: false })
           .limit(1);
       }
-      const { data: sends } = await query;
+      const { data: sends, error: sendsError } = await query;
+      if (sendsError) throw new Error(sendsError.message);
       const opened = Boolean(sends?.[0]?.opened_at);
+      const waitMode = (cfg.wait_mode as string) ?? "after_time";
 
       if (opened) {
         context = { ...context, [deadlineKey]: undefined };
@@ -344,9 +437,24 @@ async function advanceRun(run: Json, wf: Json) {
         continue;
       }
 
+      // "Never" means keep listening until the tracking endpoint wakes this
+      // run. It must not take a hidden no-branch and complete immediately.
+      if (waitMode === "never") {
+        await supabaseAdmin
+          .from("workflow_runs")
+          .update({
+            context,
+            last_send_id: lastSendId,
+            status: "waiting",
+            wake_at: new Date(Date.now() + 24 * 60 * 60_000).toISOString(),
+            node_id: node.id,
+          })
+          .eq("id", run.id);
+        return;
+      }
+
       // Mirror the panel defaults: when nothing is configured we wait 1 day
       // for the open before taking the "no" branch.
-      const waitMode = (cfg.wait_mode as string) ?? "after_time";
       const hasWindow =
         cfg.days !== undefined || cfg.hours !== undefined || cfg.minutes !== undefined;
       const waitMs =
@@ -412,17 +520,24 @@ async function advanceRun(run: Json, wf: Json) {
 
         if (el === "a_move_list") {
           if (existing) {
-            // Target row already exists: drop the source row, follow the target.
-            await supabaseAdmin.from("contacts").delete().eq("id", contact.id);
+            // Re-parent runs before deleting the duplicate contact so the FK
+            // cascade cannot silently terminate unrelated automations.
+            await mergeContactRuns(contact.id, existing.id, run.id);
+            const { error: deleteError } = await supabaseAdmin
+              .from("contacts")
+              .delete()
+              .eq("id", contact.id);
+            if (deleteError) throw new Error(`Move to list failed: ${deleteError.message}`);
             activeContactId = existing.id;
           } else {
-            await supabaseAdmin
+            const { error: moveError } = await supabaseAdmin
               .from("contacts")
               .update({ list_id: targetId })
               .eq("id", contact.id);
+            if (moveError) throw new Error(`Move to list failed: ${moveError.message}`);
           }
         } else if (!existing) {
-          const { data: copied } = await supabaseAdmin
+          const { error: copyError } = await supabaseAdmin
             .from("contacts")
             .insert({
               user_id: run.user_id,
@@ -435,15 +550,17 @@ async function advanceRun(run: Json, wf: Json) {
             })
             .select("id")
             .maybeSingle();
-          void copied;
+          if (copyError) throw new Error(`Copy to list failed: ${copyError.message}`);
         }
 
         if (activeContactId !== run.contact_id) {
           run.contact_id = activeContactId;
-          await supabaseAdmin
+          const { error: runContactError } = await supabaseAdmin
             .from("workflow_runs")
             .update({ contact_id: activeContactId })
             .eq("id", run.id);
+          if (runContactError)
+            throw new Error(`Could not continue moved contact: ${runContactError.message}`);
         }
 
         await logEvent({
@@ -474,22 +591,35 @@ async function advanceRun(run: Json, wf: Json) {
     /* --- Remove contact ----------------------------------------------- */
     if (el === "a_remove_contact" || el === "a_remove_list") {
       const from = (cfg.remove_from as string) ?? "lists";
+      let removeError: { message: string } | null = null;
+      let removedActiveContact = false;
       if (from === "account") {
-        await supabaseAdmin
+        const { error } = await supabaseAdmin
           .from("contacts")
           .delete()
           .eq("user_id", run.user_id)
           .eq("email", contact.email);
+        removeError = error;
+        removedActiveContact = true;
       } else if (from === "lists" && cfg.list_id) {
-        await supabaseAdmin
+        const { error } = await supabaseAdmin
           .from("contacts")
           .delete()
           .eq("user_id", run.user_id)
           .eq("list_id", cfg.list_id)
           .eq("email", contact.email);
+        removeError = error;
+        removedActiveContact = cfg.list_id === contact.list_id;
+      } else if (from === "cycle") {
+        // Leaving an autoresponder/workflow cycle must not delete the contact
+        // from the user's address book.
+        removedActiveContact = true;
       } else {
-        await supabaseAdmin.from("contacts").delete().eq("id", contact.id);
+        const { error } = await supabaseAdmin.from("contacts").delete().eq("id", contact.id);
+        removeError = error;
+        removedActiveContact = true;
       }
+      if (removeError) throw new Error(`Remove contact failed: ${removeError.message}`);
       await logEvent({
         user_id: run.user_id,
         workflow_id: wf.id,
@@ -499,7 +629,9 @@ async function advanceRun(run: Json, wf: Json) {
         detail: from,
         email: run.email,
       });
-      return finish(run.id, "completed");
+      if (removedActiveContact) return finish(run.id, "completed");
+      nodeId = nextNodeId(wf, node.id);
+      continue;
     }
 
     /* --- Wait ---------------------------------------------------------- */

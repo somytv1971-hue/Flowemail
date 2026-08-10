@@ -135,14 +135,15 @@ export function WorkflowCanvas({
 
   const finishLink = (targetId?: string) => {
     if (link && targetId && targetId !== link.source) {
-      const exists = edges.some(
-        (e) => e.source === link.source && e.target === targetId && e.branch === link.branch,
+      // A node has one route per output. Reconnecting an output replaces its
+      // old edge so the canvas always matches the route the engine will take.
+      const otherEdges = edges.filter(
+        (edge) => !(edge.source === link.source && edge.branch === link.branch),
       );
-      if (!exists)
-        onEdgesChange([
-          ...edges,
-          { id: crypto.randomUUID(), source: link.source, target: targetId, branch: link.branch },
-        ]);
+      onEdgesChange([
+        ...otherEdges,
+        { id: crypto.randomUUID(), source: link.source, target: targetId, branch: link.branch },
+      ]);
     }
     setLink(null);
   };
