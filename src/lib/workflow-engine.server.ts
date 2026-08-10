@@ -321,33 +321,36 @@ async function advanceRun(run: Json, wf: Json) {
           detail: "No message selected on the Send message step",
           email: run.email,
         });
+        return finish(run.id, "failed", "No message selected on the Send message step");
       } else {
-        const { data: message } = await supabaseAdmin
+        const { data: message, error: messageError } = await supabaseAdmin
           .from("automation_messages")
           .select("*")
           .eq("id", cfg.message_id)
+          .eq("user_id", run.user_id)
           .maybeSingle();
-        if (message) {
-          const res = await sendMessageToContact({
-            userId: run.user_id,
-            message,
-            contact,
-            workflowId: wf.id,
-            runId: run.id,
-            listId: contact.list_id,
-          });
-          lastSendId = res.sendId;
-          context = { ...context, last_message_id: message.id };
-          await logEvent({
-            user_id: run.user_id,
-            workflow_id: wf.id,
-            run_id: run.id,
-            node_id: node.id,
-            type: res.sent ? "message_sent" : "message_failed",
-            detail: res.sent ? (message.subject ?? "") : (res.reason ?? ""),
-            email: run.email,
-          });
-        }
+        if (messageError) throw new Error(messageError.message);
+        if (!message) return finish(run.id, "failed", "Selected automation message no longer exists");
+        const res = await sendMessageToContact({
+          userId: run.user_id,
+          message,
+          contact,
+          workflowId: wf.id,
+          runId: run.id,
+          listId: contact.list_id,
+        });
+        lastSendId = res.sendId;
+        context = { ...context, last_message_id: message.id };
+        await logEvent({
+          user_id: run.user_id,
+          workflow_id: wf.id,
+          run_id: run.id,
+          node_id: node.id,
+          type: res.sent ? "message_sent" : "message_failed",
+          detail: res.sent ? (message.subject ?? "") : (res.reason ?? ""),
+          email: run.email,
+        });
+        if (!res.sent) return finish(run.id, "failed", res.reason ?? "Message delivery failed");
       }
       nodeId = nextNodeId(wf, node.id);
       continue;
@@ -373,7 +376,8 @@ async function advanceRun(run: Json, wf: Json) {
           .order("created_at", { ascending: false })
           .limit(1);
       }
-      const { data: sends } = await query;
+      const { data: sends, error: sendsError } = await query;
+      if (sendsError) throw new Error(sendsError.message);
       const opened = Boolean(sends?.[0]?.opened_at);
       const waitMode = (cfg.wait_mode as string) ?? "after_time";
 
