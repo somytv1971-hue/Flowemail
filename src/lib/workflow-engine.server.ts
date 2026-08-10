@@ -184,7 +184,7 @@ export async function sendMessageToContact(params: {
 /* ------------------------------------------------------------------ */
 
 function waitMillis(cfg: Json) {
-  const days = Number(cfg.wait_days ?? 0);
+  const days = Number(cfg.wait_days ?? 1);
   const hours = Number(cfg.wait_hours ?? 0);
   const minutes = Number(cfg.wait_minutes ?? 0);
   const ms = ((days * 24 + hours) * 60 + minutes) * 60_000;
@@ -197,10 +197,12 @@ function nextWakeForWait(cfg: Json): Date {
 
   if (type === "for") {
     let target = new Date(now.getTime() + waitMillis(cfg));
-    const weekdays: string[] = cfg.wait_weekdays ?? [];
+    const weekdays: string[] = (cfg.wait_weekdays ?? []).map((day: unknown) =>
+      String(day).slice(0, 3).toLowerCase(),
+    );
     if (weekdays.length > 0) {
       const map = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-      for (let i = 0; i < 7 && !weekdays.includes(map[target.getDay()]!); i++) {
+      for (let i = 0; i < 7 && !weekdays.includes(map[target.getDay()] ?? ""); i++) {
         target = new Date(target.getTime() + 86_400_000);
       }
     }
@@ -344,6 +346,22 @@ async function advanceRun(run: Json, wf: Json) {
         continue;
       }
 
+      // "Never" means keep listening until the tracking endpoint wakes this
+      // run. It must not take a hidden no-branch and complete immediately.
+      if (waitMode === "never") {
+        await supabaseAdmin
+          .from("workflow_runs")
+          .update({
+            context,
+            last_send_id: lastSendId,
+            status: "waiting",
+            wake_at: new Date(Date.now() + 24 * 60 * 60_000).toISOString(),
+            node_id: node.id,
+          })
+          .eq("id", run.id);
+        return;
+      }
+
       // Mirror the panel defaults: when nothing is configured we wait 1 day
       // for the open before taking the "no" branch.
       const waitMode = (cfg.wait_mode as string) ?? "after_time";
@@ -413,16 +431,21 @@ async function advanceRun(run: Json, wf: Json) {
         if (el === "a_move_list") {
           if (existing) {
             // Target row already exists: drop the source row, follow the target.
-            await supabaseAdmin.from("contacts").delete().eq("id", contact.id);
+            const { error: deleteError } = await supabaseAdmin
+              .from("contacts")
+              .delete()
+              .eq("id", contact.id);
+            if (deleteError) throw new Error(`Move to list failed: ${deleteError.message}`);
             activeContactId = existing.id;
           } else {
-            await supabaseAdmin
+            const { error: moveError } = await supabaseAdmin
               .from("contacts")
               .update({ list_id: targetId })
               .eq("id", contact.id);
+            if (moveError) throw new Error(`Move to list failed: ${moveError.message}`);
           }
         } else if (!existing) {
-          const { data: copied } = await supabaseAdmin
+          const { error: copyError } = await supabaseAdmin
             .from("contacts")
             .insert({
               user_id: run.user_id,
@@ -435,15 +458,17 @@ async function advanceRun(run: Json, wf: Json) {
             })
             .select("id")
             .maybeSingle();
-          void copied;
+          if (copyError) throw new Error(`Copy to list failed: ${copyError.message}`);
         }
 
         if (activeContactId !== run.contact_id) {
           run.contact_id = activeContactId;
-          await supabaseAdmin
+          const { error: runContactError } = await supabaseAdmin
             .from("workflow_runs")
             .update({ contact_id: activeContactId })
             .eq("id", run.id);
+          if (runContactError)
+            throw new Error(`Could not continue moved contact: ${runContactError.message}`);
         }
 
         await logEvent({
@@ -474,22 +499,27 @@ async function advanceRun(run: Json, wf: Json) {
     /* --- Remove contact ----------------------------------------------- */
     if (el === "a_remove_contact" || el === "a_remove_list") {
       const from = (cfg.remove_from as string) ?? "lists";
+      let removeError: { message: string } | null = null;
       if (from === "account") {
-        await supabaseAdmin
+        const { error } = await supabaseAdmin
           .from("contacts")
           .delete()
           .eq("user_id", run.user_id)
           .eq("email", contact.email);
+        removeError = error;
       } else if (from === "lists" && cfg.list_id) {
-        await supabaseAdmin
+        const { error } = await supabaseAdmin
           .from("contacts")
           .delete()
           .eq("user_id", run.user_id)
           .eq("list_id", cfg.list_id)
           .eq("email", contact.email);
+        removeError = error;
       } else {
-        await supabaseAdmin.from("contacts").delete().eq("id", contact.id);
+        const { error } = await supabaseAdmin.from("contacts").delete().eq("id", contact.id);
+        removeError = error;
       }
+      if (removeError) throw new Error(`Remove contact failed: ${removeError.message}`);
       await logEvent({
         user_id: run.user_id,
         workflow_id: wf.id,
