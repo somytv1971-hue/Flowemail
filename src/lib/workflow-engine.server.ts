@@ -288,6 +288,47 @@ async function finish(runId: string, status: "completed" | "failed", error?: str
     .eq("id", runId);
 }
 
+async function mergeContactRuns(sourceContactId: string, targetContactId: string, currentRunId: string) {
+  const { data: sourceRuns, error: sourceRunsError } = await supabaseAdmin
+    .from("workflow_runs")
+    .select("id,workflow_id,status")
+    .eq("contact_id", sourceContactId);
+  if (sourceRunsError) throw new Error(sourceRunsError.message);
+
+  const workflowIds = [...new Set((sourceRuns ?? []).map((sourceRun) => sourceRun.workflow_id))];
+  const { data: targetRuns, error: targetRunsError } = workflowIds.length
+    ? await supabaseAdmin
+        .from("workflow_runs")
+        .select("id,workflow_id,status")
+        .eq("contact_id", targetContactId)
+        .in("workflow_id", workflowIds)
+    : { data: [], error: null };
+  if (targetRunsError) throw new Error(targetRunsError.message);
+
+  const targetByWorkflow = new Map(
+    (targetRuns ?? []).map((targetRun) => [targetRun.workflow_id, targetRun]),
+  );
+  for (const sourceRun of sourceRuns ?? []) {
+    const duplicate = targetByWorkflow.get(sourceRun.workflow_id);
+    if (duplicate) {
+      // Keep the currently executing run; otherwise keep the existing target
+      // run and remove only the duplicate enrollment.
+      const duplicateId = sourceRun.id === currentRunId ? duplicate.id : sourceRun.id;
+      const { error: duplicateError } = await supabaseAdmin
+        .from("workflow_runs")
+        .delete()
+        .eq("id", duplicateId);
+      if (duplicateError) throw new Error(duplicateError.message);
+      if (sourceRun.id !== currentRunId) continue;
+    }
+    const { error: reparentError } = await supabaseAdmin
+      .from("workflow_runs")
+      .update({ contact_id: targetContactId })
+      .eq("id", sourceRun.id);
+    if (reparentError) throw new Error(reparentError.message);
+  }
+}
+
 /** Executes one run until it must wait, ends, or hits the step cap. */
 async function advanceRun(run: Json, wf: Json) {
   let nodeId: string | null = run.node_id;
@@ -479,7 +520,9 @@ async function advanceRun(run: Json, wf: Json) {
 
         if (el === "a_move_list") {
           if (existing) {
-            // Target row already exists: drop the source row, follow the target.
+            // Re-parent runs before deleting the duplicate contact so the FK
+            // cascade cannot silently terminate unrelated automations.
+            await mergeContactRuns(contact.id, existing.id, run.id);
             const { error: deleteError } = await supabaseAdmin
               .from("contacts")
               .delete()
