@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listContactLists } from "@/lib/contacts.functions";
+import { listAutoresponders } from "@/lib/autoresponders.functions";
 import { TAB_COLORS } from "@/components/workflow-subscribe-panel";
 
 export type MoveToListConfig = {
