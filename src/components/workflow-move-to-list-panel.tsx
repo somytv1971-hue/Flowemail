@@ -104,18 +104,24 @@ export function WorkflowMoveToListPanel({
       <div className="space-y-2">
         <Label>Autoresponder cycle</Label>
         <Select
-          value={config.cycle_day ?? "Day 0"}
+          value={config.cycle_day ?? ""}
           onValueChange={(v) => onChange({ cycle_day: v })}
         >
           <SelectTrigger>
-            <SelectValue />
+            <SelectValue placeholder="Choose a cycle day" />
           </SelectTrigger>
           <SelectContent className="max-h-64">
-            {CYCLE_DAYS.map((d) => (
-              <SelectItem key={d} value={d}>
-                {d}
-              </SelectItem>
-            ))}
+            {cycleOptions.length === 0 ? (
+              <div className="px-2 py-3 text-sm text-muted-foreground">
+                No autoresponder days created yet
+              </div>
+            ) : (
+              cycleOptions.map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </div>
