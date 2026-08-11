@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listContactLists } from "@/lib/contacts.functions";
+import { listAutoresponders } from "@/lib/autoresponders.functions";
 import { TAB_COLORS } from "@/components/workflow-subscribe-panel";
 
 export type MoveToListConfig = {
@@ -27,8 +28,6 @@ export function moveToListSummary(cfg: MoveToListConfig) {
     : "Move to list";
 }
 
-const CYCLE_DAYS = Array.from({ length: 31 }, (_, i) => `Day ${i}`);
-
 export function WorkflowMoveToListPanel({
   config,
   onChange,
@@ -41,6 +40,32 @@ export function WorkflowMoveToListPanel({
     queryKey: ["contact-lists"],
     queryFn: () => fetchLists({}),
   });
+
+  const fetchAutoresponders = useServerFn(listAutoresponders);
+  const { data: autoresponders = [] } = useQuery({
+    queryKey: ["autoresponders"],
+    queryFn: () => fetchAutoresponders({}),
+  });
+
+  // Only offer the cycle days that actually have an autoresponder message,
+  // scoped to the selected target list when it matches an autoresponder list.
+  const targetName = config.target_list_name ?? null;
+  const scoped = (autoresponders as any[]).filter(
+    (a) => !targetName || a.list_name === targetName,
+  );
+  const pool = scoped.length > 0 ? scoped : (autoresponders as any[]);
+  const cycleOptions = Array.from(
+    new Map(
+      pool
+        .slice()
+        .sort((a, b) => (a.cycle_day ?? 0) - (b.cycle_day ?? 0))
+        .map((a) => [
+          `Day ${a.cycle_day ?? 0}`,
+          `Day ${a.cycle_day ?? 0} — ${a.name ?? "Untitled autoresponder"}`,
+        ]),
+    ).entries(),
+  );
+
 
   return (
     <div className="space-y-5 p-4">
@@ -79,18 +104,24 @@ export function WorkflowMoveToListPanel({
       <div className="space-y-2">
         <Label>Autoresponder cycle</Label>
         <Select
-          value={config.cycle_day ?? "Day 0"}
+          value={config.cycle_day ?? ""}
           onValueChange={(v) => onChange({ cycle_day: v })}
         >
           <SelectTrigger>
-            <SelectValue />
+            <SelectValue placeholder="Choose a cycle day" />
           </SelectTrigger>
           <SelectContent className="max-h-64">
-            {CYCLE_DAYS.map((d) => (
-              <SelectItem key={d} value={d}>
-                {d}
-              </SelectItem>
-            ))}
+            {cycleOptions.length === 0 ? (
+              <div className="px-2 py-3 text-sm text-muted-foreground">
+                No autoresponder days created yet
+              </div>
+            ) : (
+              cycleOptions.map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </div>
