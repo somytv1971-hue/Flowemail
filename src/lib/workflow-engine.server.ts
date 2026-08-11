@@ -402,13 +402,23 @@ async function advanceRun(run: Json, wf: Json) {
       const deadlineKey = `open_deadline_${node.id}`;
       const deadline = context[deadlineKey] as string | undefined;
 
-      let query = supabaseAdmin
-        .from("email_sends")
-        .select("id,opened_at")
-        .eq("run_id", run.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (cfg.scope === "specific" && cfg.message_id) {
+      // Evaluate the exact send produced by the preceding Send message node.
+      // Looking up only the latest row for a run becomes ambiguous when the
+      // same workflow sends more than one message before an open condition.
+      let query = lastSendId
+        ? supabaseAdmin
+            .from("email_sends")
+            .select("id,opened_at")
+            .eq("id", lastSendId)
+            .eq("run_id", run.id)
+            .limit(1)
+        : supabaseAdmin
+            .from("email_sends")
+            .select("id,opened_at")
+            .eq("run_id", run.id)
+            .order("created_at", { ascending: false })
+            .limit(1);
+      if (!lastSendId && cfg.scope === "specific" && cfg.message_id) {
         query = supabaseAdmin
           .from("email_sends")
           .select("id,opened_at")
