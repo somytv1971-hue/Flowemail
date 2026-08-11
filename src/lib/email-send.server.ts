@@ -9,7 +9,11 @@ const SENDER_DOMAIN = "notify.digitalgoodsmart.xyz";
 export function appBaseUrl() {
   return (
     process.env["APP_BASE_URL"] ??
-    "https://project--32e7732a-e123-44dd-adf0-369d5f618cf8.lovable.app"
+    // Use the stable development deployment until APP_BASE_URL is configured
+    // for a published/custom domain. The production hostname returns 404 while
+    // the project is unpublished, which prevents open/click events from ever
+    // reaching the workflow engine.
+    "https://project--32e7732a-e123-44dd-adf0-369d5f618cf8-dev.lovable.app"
   );
 }
 
@@ -98,7 +102,9 @@ export function instrumentHtml(html: string, sendId: string, opts?: { clicks?: b
     });
   }
 
-  const pixel = `<img src="${base}/api/public/t/open/${sendId}" width="1" height="1" alt="" style="display:none;width:1px;height:1px" />`;
+  // Do not use display:none: several inbox image proxies skip hidden images,
+  // so the open event would never be delivered even when images are enabled.
+  const pixel = `<img src="${base}/api/public/t/open/${sendId}" width="1" height="1" alt="" aria-hidden="true" style="width:1px;height:1px;border:0;opacity:0" />`;
   if (/<\/body>/i.test(out)) return out.replace(/<\/body>/i, `${pixel}</body>`);
   return out + pixel;
 }
