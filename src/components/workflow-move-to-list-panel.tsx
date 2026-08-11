@@ -28,8 +28,6 @@ export function moveToListSummary(cfg: MoveToListConfig) {
     : "Move to list";
 }
 
-const CYCLE_DAYS = Array.from({ length: 31 }, (_, i) => `Day ${i}`);
-
 export function WorkflowMoveToListPanel({
   config,
   onChange,
@@ -42,6 +40,32 @@ export function WorkflowMoveToListPanel({
     queryKey: ["contact-lists"],
     queryFn: () => fetchLists({}),
   });
+
+  const fetchAutoresponders = useServerFn(listAutoresponders);
+  const { data: autoresponders = [] } = useQuery({
+    queryKey: ["autoresponders"],
+    queryFn: () => fetchAutoresponders({}),
+  });
+
+  // Only offer the cycle days that actually have an autoresponder message,
+  // scoped to the selected target list when it matches an autoresponder list.
+  const targetName = config.target_list_name ?? null;
+  const scoped = (autoresponders as any[]).filter(
+    (a) => !targetName || a.list_name === targetName,
+  );
+  const pool = scoped.length > 0 ? scoped : (autoresponders as any[]);
+  const cycleOptions = Array.from(
+    new Map(
+      pool
+        .slice()
+        .sort((a, b) => (a.cycle_day ?? 0) - (b.cycle_day ?? 0))
+        .map((a) => [
+          `Day ${a.cycle_day ?? 0}`,
+          `Day ${a.cycle_day ?? 0} — ${a.name ?? "Untitled autoresponder"}`,
+        ]),
+    ).entries(),
+  );
+
 
   return (
     <div className="space-y-5 p-4">
