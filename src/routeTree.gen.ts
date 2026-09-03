@@ -9,30 +9,34 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ConfirmSenderRouteImport } from './routes/confirm-sender'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
-import { Route as AuthenticatedEmailsAndDomainsRouteImport } from './routes/_authenticated/emails-and-domains'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ConfirmSenderRouteImport } from './routes/confirm-sender'
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated/contacts'
-import { Route as AuthenticatedAutoresponderIndexRouteImport } from './routes/_authenticated/autoresponder/index'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedEmailsAndDomainsRouteImport } from './routes/_authenticated/emails-and-domains'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedAutomationIndexRouteImport } from './routes/_authenticated/automation/index'
+import { Route as AuthenticatedAutoresponderIndexRouteImport } from './routes/_authenticated/autoresponder/index'
 import { Route as AuthenticatedAutoresponderIdRouteImport } from './routes/_authenticated/autoresponder/$id'
-import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
-import { Route as ApiPublicHooksWorkflowTickRouteImport } from './routes/api/public/hooks/workflow-tick'
-import { Route as AuthenticatedAutomationWorkflowsNewRouteImport } from './routes/_authenticated/automation/workflows.new'
 import { Route as AuthenticatedAutomationWorkflowsIdRouteImport } from './routes/_authenticated/automation/workflows.$id'
+import { Route as AuthenticatedAutomationWorkflowsNewRouteImport } from './routes/_authenticated/automation/workflows.new'
+import { Route as ApiPublicHooksWorkflowTickRouteImport } from './routes/api/public/hooks/workflow-tick'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as AuthenticatedAutomationMessagesIdIndexRouteImport } from './routes/_authenticated/automation/messages.$id.index'
-import { Route as ApiPublicTOpenSendIdRouteImport } from './routes/api/public/t/open.$sendId'
-import { Route as ApiPublicTClickSendIdRouteImport } from './routes/api/public/t/click.$sendId'
-import { Route as AuthenticatedAutomationMessagesIdDesignRouteImport } from './routes/_authenticated/automation/messages.$id.design'
 import { Route as AuthenticatedAutomationMessagesIdBuilderRouteImport } from './routes/_authenticated/automation/messages.$id.builder'
+import { Route as AuthenticatedAutomationMessagesIdDesignRouteImport } from './routes/_authenticated/automation/messages.$id.design'
+import { Route as ApiPublicTClickSendIdRouteImport } from './routes/api/public/t/click.$sendId'
+import { Route as ApiPublicTOpenSendIdRouteImport } from './routes/api/public/t/open.$sendId'
 
-const ConfirmSenderRoute = ConfirmSenderRouteImport.update({
-  id: '/confirm-sender',
-  path: '/confirm-sender',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -40,18 +44,19 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const ConfirmSenderRoute = ConfirmSenderRouteImport.update({
+  id: '/confirm-sender',
+  path: '/confirm-sender',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedContactsRoute = AuthenticatedContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedEmailsAndDomainsRoute =
@@ -60,26 +65,21 @@ const AuthenticatedEmailsAndDomainsRoute =
     path: '/emails-and-domains',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedContactsRoute = AuthenticatedContactsRouteImport.update({
-  id: '/contacts',
-  path: '/contacts',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedAutoresponderIndexRoute =
-  AuthenticatedAutoresponderIndexRouteImport.update({
-    id: '/autoresponder/',
-    path: '/autoresponder/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedAutomationIndexRoute =
   AuthenticatedAutomationIndexRouteImport.update({
     id: '/automation/',
     path: '/automation/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAutoresponderIndexRoute =
+  AuthenticatedAutoresponderIndexRouteImport.update({
+    id: '/autoresponder/',
+    path: '/autoresponder/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAutoresponderIdRoute =
@@ -88,17 +88,11 @@ const AuthenticatedAutoresponderIdRoute =
     path: '/autoresponder/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const LovableEmailTransactionalPreviewRoute =
-  LovableEmailTransactionalPreviewRouteImport.update({
-    id: '/lovable/email/transactional/preview',
-    path: '/lovable/email/transactional/preview',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksWorkflowTickRoute =
-  ApiPublicHooksWorkflowTickRouteImport.update({
-    id: '/api/public/hooks/workflow-tick',
-    path: '/api/public/hooks/workflow-tick',
-    getParentRoute: () => rootRouteImport,
+const AuthenticatedAutomationWorkflowsIdRoute =
+  AuthenticatedAutomationWorkflowsIdRouteImport.update({
+    id: '/automation/workflows/$id',
+    path: '/automation/workflows/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAutomationWorkflowsNewRoute =
   AuthenticatedAutomationWorkflowsNewRouteImport.update({
@@ -106,32 +100,22 @@ const AuthenticatedAutomationWorkflowsNewRoute =
     path: '/automation/workflows/new',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAutomationWorkflowsIdRoute =
-  AuthenticatedAutomationWorkflowsIdRouteImport.update({
-    id: '/automation/workflows/$id',
-    path: '/automation/workflows/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
+const ApiPublicHooksWorkflowTickRoute =
+  ApiPublicHooksWorkflowTickRouteImport.update({
+    id: '/api/public/hooks/workflow-tick',
+    path: '/api/public/hooks/workflow-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedAutomationMessagesIdIndexRoute =
   AuthenticatedAutomationMessagesIdIndexRouteImport.update({
     id: '/automation/messages/$id/',
     path: '/automation/messages/$id/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const ApiPublicTOpenSendIdRoute = ApiPublicTOpenSendIdRouteImport.update({
-  id: '/api/public/t/open/$sendId',
-  path: '/api/public/t/open/$sendId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicTClickSendIdRoute = ApiPublicTClickSendIdRouteImport.update({
-  id: '/api/public/t/click/$sendId',
-  path: '/api/public/t/click/$sendId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedAutomationMessagesIdDesignRoute =
-  AuthenticatedAutomationMessagesIdDesignRouteImport.update({
-    id: '/automation/messages/$id/design',
-    path: '/automation/messages/$id/design',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAutomationMessagesIdBuilderRoute =
@@ -140,6 +124,22 @@ const AuthenticatedAutomationMessagesIdBuilderRoute =
     path: '/automation/messages/$id/builder',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAutomationMessagesIdDesignRoute =
+  AuthenticatedAutomationMessagesIdDesignRouteImport.update({
+    id: '/automation/messages/$id/design',
+    path: '/automation/messages/$id/design',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const ApiPublicTClickSendIdRoute = ApiPublicTClickSendIdRouteImport.update({
+  id: '/api/public/t/click/$sendId',
+  path: '/api/public/t/click/$sendId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicTOpenSendIdRoute = ApiPublicTOpenSendIdRouteImport.update({
+  id: '/api/public/t/open/$sendId',
+  path: '/api/public/t/open/$sendId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -286,18 +286,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/confirm-sender': {
-      id: '/confirm-sender'
-      path: '/confirm-sender'
-      fullPath: '/confirm-sender'
-      preLoaderRoute: typeof ConfirmSenderRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -307,25 +300,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/reports': {
-      id: '/_authenticated/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof AuthenticatedReportsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/confirm-sender': {
+      id: '/confirm-sender'
+      path: '/confirm-sender'
+      fullPath: '/confirm-sender'
+      preLoaderRoute: typeof ConfirmSenderRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/emails-and-domains': {
-      id: '/_authenticated/emails-and-domains'
-      path: '/emails-and-domains'
-      fullPath: '/emails-and-domains'
-      preLoaderRoute: typeof AuthenticatedEmailsAndDomainsRouteImport
+    '/_authenticated/contacts': {
+      id: '/_authenticated/contacts'
+      path: '/contacts'
+      fullPath: '/contacts'
+      preLoaderRoute: typeof AuthenticatedContactsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -335,18 +328,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/contacts': {
-      id: '/_authenticated/contacts'
-      path: '/contacts'
-      fullPath: '/contacts'
-      preLoaderRoute: typeof AuthenticatedContactsRouteImport
+    '/_authenticated/emails-and-domains': {
+      id: '/_authenticated/emails-and-domains'
+      path: '/emails-and-domains'
+      fullPath: '/emails-and-domains'
+      preLoaderRoute: typeof AuthenticatedEmailsAndDomainsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/autoresponder/': {
-      id: '/_authenticated/autoresponder/'
-      path: '/autoresponder'
-      fullPath: '/autoresponder/'
-      preLoaderRoute: typeof AuthenticatedAutoresponderIndexRouteImport
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/automation/': {
@@ -356,32 +349,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAutomationIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/autoresponder/': {
+      id: '/_authenticated/autoresponder/'
+      path: '/autoresponder'
+      fullPath: '/autoresponder/'
+      preLoaderRoute: typeof AuthenticatedAutoresponderIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/autoresponder/$id': {
       id: '/_authenticated/autoresponder/$id'
       path: '/autoresponder/$id'
       fullPath: '/autoresponder/$id'
       preLoaderRoute: typeof AuthenticatedAutoresponderIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/lovable/email/transactional/preview': {
-      id: '/lovable/email/transactional/preview'
-      path: '/lovable/email/transactional/preview'
-      fullPath: '/lovable/email/transactional/preview'
-      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/workflow-tick': {
-      id: '/api/public/hooks/workflow-tick'
-      path: '/api/public/hooks/workflow-tick'
-      fullPath: '/api/public/hooks/workflow-tick'
-      preLoaderRoute: typeof ApiPublicHooksWorkflowTickRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/automation/workflows/new': {
-      id: '/_authenticated/automation/workflows/new'
-      path: '/automation/workflows/new'
-      fullPath: '/automation/workflows/new'
-      preLoaderRoute: typeof AuthenticatedAutomationWorkflowsNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/automation/workflows/$id': {
@@ -391,32 +370,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAutomationWorkflowsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/automation/workflows/new': {
+      id: '/_authenticated/automation/workflows/new'
+      path: '/automation/workflows/new'
+      fullPath: '/automation/workflows/new'
+      preLoaderRoute: typeof AuthenticatedAutomationWorkflowsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/hooks/workflow-tick': {
+      id: '/api/public/hooks/workflow-tick'
+      path: '/api/public/hooks/workflow-tick'
+      fullPath: '/api/public/hooks/workflow-tick'
+      preLoaderRoute: typeof ApiPublicHooksWorkflowTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/automation/messages/$id/': {
       id: '/_authenticated/automation/messages/$id/'
       path: '/automation/messages/$id'
       fullPath: '/automation/messages/$id/'
       preLoaderRoute: typeof AuthenticatedAutomationMessagesIdIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/api/public/t/open/$sendId': {
-      id: '/api/public/t/open/$sendId'
-      path: '/api/public/t/open/$sendId'
-      fullPath: '/api/public/t/open/$sendId'
-      preLoaderRoute: typeof ApiPublicTOpenSendIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/t/click/$sendId': {
-      id: '/api/public/t/click/$sendId'
-      path: '/api/public/t/click/$sendId'
-      fullPath: '/api/public/t/click/$sendId'
-      preLoaderRoute: typeof ApiPublicTClickSendIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/automation/messages/$id/design': {
-      id: '/_authenticated/automation/messages/$id/design'
-      path: '/automation/messages/$id/design'
-      fullPath: '/automation/messages/$id/design'
-      preLoaderRoute: typeof AuthenticatedAutomationMessagesIdDesignRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/automation/messages/$id/builder': {
@@ -425,6 +404,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/automation/messages/$id/builder'
       preLoaderRoute: typeof AuthenticatedAutomationMessagesIdBuilderRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/automation/messages/$id/design': {
+      id: '/_authenticated/automation/messages/$id/design'
+      path: '/automation/messages/$id/design'
+      fullPath: '/automation/messages/$id/design'
+      preLoaderRoute: typeof AuthenticatedAutomationMessagesIdDesignRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/t/click/$sendId': {
+      id: '/api/public/t/click/$sendId'
+      path: '/api/public/t/click/$sendId'
+      fullPath: '/api/public/t/click/$sendId'
+      preLoaderRoute: typeof ApiPublicTClickSendIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/t/open/$sendId': {
+      id: '/api/public/t/open/$sendId'
+      path: '/api/public/t/open/$sendId'
+      fullPath: '/api/public/t/open/$sendId'
+      preLoaderRoute: typeof ApiPublicTOpenSendIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
