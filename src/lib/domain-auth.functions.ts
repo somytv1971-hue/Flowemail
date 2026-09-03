@@ -23,7 +23,7 @@ async function txtRecords(name: string): Promise<string[]> {
 }
 
 export const checkDomainAuth = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => z.object({ domain: z.string().min(3) }).parse(data))
+  .validator((data: unknown) => z.object({ domain: z.string().min(3) }).parse(data))
   .handler(async ({ data }): Promise<DomainAuthStatus> => {
     const domain = data.domain.toLowerCase();
     const [root, dmarc, dkim] = await Promise.all([

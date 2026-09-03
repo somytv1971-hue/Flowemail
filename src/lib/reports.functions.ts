@@ -28,7 +28,7 @@ export type ReportSummary = {
 
 export const getReportSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ days: z.number().int().min(1).max(365).default(30) }).parse(d ?? {}))
+  .validator((d: unknown) => z.object({ days: z.number().int().min(1).max(365).default(30) }).parse(d ?? {}))
   .handler(async ({ data, context }): Promise<ReportSummary> => {
     const since = new Date(Date.now() - data.days * 86_400_000).toISOString();
 
@@ -93,7 +93,7 @@ export const getReportSummary = createServerFn({ method: "GET" })
 /** Feed for the Automation → Events tab. */
 export const listWorkflowEvents = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ workflow_id: z.string().uuid().optional(), limit: z.number().int().min(1).max(200).default(100) }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
@@ -111,7 +111,7 @@ export const listWorkflowEvents = createServerFn({ method: "GET" })
 /** Live run counters for one workflow. */
 export const getWorkflowStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ workflow_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ workflow_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("workflow_runs")

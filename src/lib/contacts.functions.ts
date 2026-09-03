@@ -24,7 +24,7 @@ export const listContactLists = createServerFn({ method: "GET" })
 
 export const createContactList = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         name: z.string().trim().min(1).max(120),
@@ -44,7 +44,7 @@ export const createContactList = createServerFn({ method: "POST" })
 
 export const deleteContactList = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("contact_lists").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -53,7 +53,7 @@ export const deleteContactList = createServerFn({ method: "POST" })
 
 export const listContacts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ listId: z.string().uuid().optional() }).parse(d ?? {}),
   )
   .handler(async ({ data, context }) => {
@@ -77,7 +77,7 @@ const contactSchema = z.object({
 
 export const addContact = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => contactSchema.parse(d))
+  .validator((d: unknown) => contactSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("contacts")
@@ -102,7 +102,7 @@ export const addContact = createServerFn({ method: "POST" })
 
 export const addContactsBulk = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ list_id: z.string().uuid(), raw: z.string().min(1) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -144,7 +144,7 @@ export const addContactsBulk = createServerFn({ method: "POST" })
 
 export const deleteContact = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("contacts").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -153,7 +153,7 @@ export const deleteContact = createServerFn({ method: "POST" })
 
 export const updateContactStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({ id: z.string().uuid(), status: z.enum(["subscribed", "unsubscribed", "bounced"]) })
       .parse(d),

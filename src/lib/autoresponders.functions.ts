@@ -15,7 +15,7 @@ export const listAutoresponders = createServerFn({ method: "GET" })
 
 export const getAutoresponder = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("autoresponders")
@@ -80,7 +80,7 @@ const updateSchema = z.object({
 
 export const updateAutoresponder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => updateSchema.parse(d))
+  .validator((d: unknown) => updateSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { id, ...patch } = data;
     const { error } = await context.supabase
@@ -93,7 +93,7 @@ export const updateAutoresponder = createServerFn({ method: "POST" })
 
 export const deleteAutoresponder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("autoresponders")
@@ -109,7 +109,7 @@ export const deleteAutoresponder = createServerFn({ method: "POST" })
  */
 export const ensureAutoresponderMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("autoresponders")
@@ -146,7 +146,7 @@ export const ensureAutoresponderMessage = createServerFn({ method: "POST" })
 /** Returns the autoresponder linked to a given automation message, if any. */
 export const getAutoresponderByMessage = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ message_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ message_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("autoresponders")

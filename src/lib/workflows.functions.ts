@@ -15,7 +15,7 @@ export const listWorkflows = createServerFn({ method: "GET" })
 
 export const getWorkflow = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("workflows")
@@ -34,7 +34,7 @@ const createSchema = z.object({
 
 export const createWorkflow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => createSchema.parse(d))
+  .validator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data, context }) => {
     const startNode = {
       id: crypto.randomUUID(),
@@ -71,7 +71,7 @@ const updateSchema = z.object({
 
 export const updateWorkflow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => updateSchema.parse(d))
+  .validator((d: unknown) => updateSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { id, ...patch } = data;
     const { error } = await context.supabase
@@ -91,7 +91,7 @@ export const updateWorkflow = createServerFn({ method: "POST" })
 
 export const deleteWorkflow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("workflows")

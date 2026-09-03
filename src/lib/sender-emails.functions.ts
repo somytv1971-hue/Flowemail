@@ -16,7 +16,7 @@ export const listSenderEmails = createServerFn({ method: 'GET' })
 
 export const addSenderEmail = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         email: z.string().trim().toLowerCase().email(),
@@ -56,7 +56,7 @@ export const addSenderEmail = createServerFn({ method: 'POST' })
 
 export const resendSenderConfirmation = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from('sender_emails')
@@ -86,7 +86,7 @@ export const resendSenderConfirmation = createServerFn({ method: 'POST' })
 
 export const deleteSenderEmail = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from('sender_emails').delete().eq('id', data.id)
     if (error) throw new Error(error.message)
@@ -95,7 +95,7 @@ export const deleteSenderEmail = createServerFn({ method: 'POST' })
 
 export const setDefaultSenderEmail = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await context.supabase
       .from('sender_emails')
@@ -110,7 +110,7 @@ export const setDefaultSenderEmail = createServerFn({ method: 'POST' })
   })
 
 export const confirmSenderEmail = createServerFn({ method: 'POST' })
-  .inputValidator((d: unknown) => z.object({ token: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ token: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const { data: row, error } = await supabaseAdmin

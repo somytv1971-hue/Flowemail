@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 /** Sends one automation message to every subscribed contact in a list. */
 export const sendMessageToList = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ message_id: z.string().uuid(), list_id: z.string().uuid() }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -50,7 +50,7 @@ export const sendMessageToList = createServerFn({ method: "POST" })
 /** Sends the message to a single address so the user can check it. */
 export const sendTestMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ message_id: z.string().uuid(), email: z.string().trim().email() }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -77,7 +77,7 @@ export const sendTestMessage = createServerFn({ method: "POST" })
  */
 export const startWorkflowNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ workflow_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ workflow_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: wf, error } = await context.supabase
       .from("workflows")
