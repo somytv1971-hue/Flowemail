@@ -96,26 +96,36 @@ export const startWorkflowNow = createServerFn({ method: "POST" })
     if (cErr) throw new Error(cErr.message);
     if (!contacts?.length) return { enrolled: 0, processed: 0 };
 
-    const { enrollContacts, tickWorkflows } = await import("@/lib/workflow-engine.server");
+    try {
+      const { enrollContacts, tickWorkflows } = await import("@/lib/workflow-engine.server");
 
-    const byList = new Map<string, string[]>();
-    for (const c of contacts) {
-      if (!c.list_id) continue;
-      byList.set(c.list_id, [...(byList.get(c.list_id) ?? []), c.id]);
+      const byList = new Map<string, string[]>();
+      for (const c of contacts) {
+        if (!c.list_id) continue;
+        byList.set(c.list_id, [...(byList.get(c.list_id) ?? []), c.id]);
+      }
+      let enrolled = 0;
+      for (const [listId, ids] of byList) {
+        const r = await enrollContacts({ userId: context.userId, listId, contactIds: ids });
+        enrolled += r.enrolled;
+      }
+      const { processed } = await tickWorkflows(100);
+      return { enrolled, processed };
+    } catch (engineErr) {
+      console.warn("[startWorkflowNow] Workflow trigger error:", engineErr);
+      return { enrolled: 0, processed: 0 };
     }
-    let enrolled = 0;
-    for (const [listId, ids] of byList) {
-      const r = await enrollContacts({ userId: context.userId, listId, contactIds: ids });
-      enrolled += r.enrolled;
-    }
-    const { processed } = await tickWorkflows(100);
-    return { enrolled, processed };
   });
 
 /** Advances every due workflow run right now. */
 export const runWorkflowTick = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
-    const { tickWorkflows } = await import("@/lib/workflow-engine.server");
-    return tickWorkflows(100);
+    try {
+      const { tickWorkflows } = await import("@/lib/workflow-engine.server");
+      return await tickWorkflows(100);
+    } catch (engineErr) {
+      console.warn("[runWorkflowTick] Workflow tick error:", engineErr);
+      return { processed: 0 };
+    }
   });

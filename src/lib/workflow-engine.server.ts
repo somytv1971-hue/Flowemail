@@ -30,6 +30,10 @@ function nextNodeId(wf: Json, nodeId: string, branch?: "yes" | "no") {
   return (plain?.target as string) ?? null;
 }
 
+function isServiceRoleAvailable(): boolean {
+  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 async function logEvent(row: {
   user_id: string;
   workflow_id?: string | null;
@@ -39,7 +43,12 @@ async function logEvent(row: {
   detail?: string;
   email?: string | null;
 }) {
-  await supabaseAdmin.from("workflow_events").insert({ detail: "", ...row });
+  if (!isServiceRoleAvailable()) return;
+  try {
+    await supabaseAdmin.from("workflow_events").insert({ detail: "", ...row });
+  } catch (err) {
+    console.warn("[logEvent] failed:", err);
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -55,6 +64,9 @@ export async function enrollContacts(params: {
   listId: string;
   contactIds: string[];
 }) {
+  if (!isServiceRoleAvailable()) {
+    return { enrolled: 0 };
+  }
   if (params.contactIds.length === 0) return { enrolled: 0 };
 
   const { data: workflows } = await supabaseAdmin
@@ -116,6 +128,9 @@ export async function enrollExistingContactsForWorkflow(params: {
   userId: string;
   workflowId: string;
 }) {
+  if (!isServiceRoleAvailable()) {
+    return { enrolled: 0 };
+  }
   const { data: workflow, error: workflowError } = await supabaseAdmin
     .from("workflows")
     .select("*")
@@ -690,6 +705,8 @@ async function advanceRun(run: Json, wf: Json) {
  * contacts of its list once they are `cycle_day` days past sign-up.
  */
 export async function tickAutoresponders() {
+  if (!isServiceRoleAvailable()) return { sent: 0 };
+
   const { data: responders } = await supabaseAdmin
     .from("autoresponders")
     .select("*")
@@ -762,6 +779,8 @@ export async function tickAutoresponders() {
 }
 
 export async function tickWorkflows(limit = 50) {
+  if (!isServiceRoleAvailable()) return { processed: 0 };
+
   const { data: runs, error } = await supabaseAdmin
     .from("workflow_runs")
     .select("*")
@@ -805,6 +824,8 @@ export async function tickWorkflows(limit = 50) {
 
 /** Keeps the workflow list's Completed / In progress columns in sync. */
 export async function refreshWorkflowCounters() {
+  if (!isServiceRoleAvailable()) return;
+
   const { data: runs } = await supabaseAdmin
     .from("workflow_runs")
     .select("workflow_id,status");

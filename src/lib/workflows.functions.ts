@@ -80,11 +80,15 @@ export const updateWorkflow = createServerFn({ method: "POST" })
       .eq("id", id);
     if (error) throw new Error(error.message);
     if (patch.nodes || patch.status === "published") {
-      const { enrollExistingContactsForWorkflow, tickWorkflows } = await import(
-        "@/lib/workflow-engine.server"
-      );
-      await enrollExistingContactsForWorkflow({ userId: context.userId, workflowId: id });
-      await tickWorkflows(100);
+      try {
+        const { enrollExistingContactsForWorkflow, tickWorkflows } = await import(
+          "@/lib/workflow-engine.server"
+        );
+        await enrollExistingContactsForWorkflow({ userId: context.userId, workflowId: id });
+        await tickWorkflows(100);
+      } catch (engineErr) {
+        console.warn("[updateWorkflow] Background workflow trigger error:", engineErr);
+      }
     }
     return { ok: true };
   });

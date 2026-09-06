@@ -89,13 +89,17 @@ export const addContact = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    const { enrollContacts, tickWorkflows } = await import("@/lib/workflow-engine.server");
-    await enrollContacts({
-      userId: context.userId,
-      listId: data.list_id,
-      contactIds: [row.id],
-    });
-    await tickWorkflows(25);
+    try {
+      const { enrollContacts, tickWorkflows } = await import("@/lib/workflow-engine.server");
+      await enrollContacts({
+        userId: context.userId,
+        listId: data.list_id,
+        contactIds: [row.id],
+      });
+      await tickWorkflows(25);
+    } catch (engineErr) {
+      console.warn("[addContact] Background workflow enrollment skipped/failed:", engineErr);
+    }
 
     return row;
   });
@@ -130,13 +134,17 @@ export const addContactsBulk = createServerFn({ method: "POST" })
       .select("id");
     if (error) throw new Error(error.message);
 
-    const { enrollContacts, tickWorkflows } = await import("@/lib/workflow-engine.server");
-    await enrollContacts({
-      userId: context.userId,
-      listId: data.list_id,
-      contactIds: (inserted ?? []).map((r) => r.id),
-    });
-    await tickWorkflows(50);
+    try {
+      const { enrollContacts, tickWorkflows } = await import("@/lib/workflow-engine.server");
+      await enrollContacts({
+        userId: context.userId,
+        listId: data.list_id,
+        contactIds: (inserted ?? []).map((r) => r.id),
+      });
+      await tickWorkflows(50);
+    } catch (engineErr) {
+      console.warn("[addContactsBulk] Background workflow enrollment skipped/failed:", engineErr);
+    }
 
     return { inserted: rows.length };
   });
