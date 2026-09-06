@@ -66,6 +66,7 @@ type Address = {
   email: string;
   purpose: "Default" | "";
   status: "Confirmed" | "Pending";
+  confirmToken?: string;
 };
 
 type DomainRow = {
@@ -138,6 +139,7 @@ function Page() {
         email: s.email,
         purpose: s.is_default ? "Default" : "",
         status: s.status === "confirmed" ? "Confirmed" : "Pending",
+        confirmToken: s.confirm_token,
       });
     }
     return [...map.values()];
@@ -441,6 +443,28 @@ function Page() {
                                           >
                                             Set as default
                                           </DropdownMenuItem>
+                                          {a.status === "Pending" && a.confirmToken && (
+                                            <>
+                                              <DropdownMenuItem
+                                                onClick={() => {
+                                                  const url = `${window.location.origin}/confirm-sender?token=${a.confirmToken}`;
+                                                  void navigator.clipboard.writeText(url);
+                                                  toast.success("Confirmation link copied", {
+                                                    description: "Open the link in your browser to confirm this address.",
+                                                  });
+                                                }}
+                                              >
+                                                Copy confirmation link
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem
+                                                onClick={() => {
+                                                  window.open(`/confirm-sender?token=${a.confirmToken}`, "_blank");
+                                                }}
+                                              >
+                                                Verify now (open link)
+                                              </DropdownMenuItem>
+                                            </>
+                                          )}
                                           <DropdownMenuItem
                                             onClick={() => resendMutation.mutate(a.id)}
                                           >

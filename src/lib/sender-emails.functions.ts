@@ -110,16 +110,70 @@ export const setDefaultSenderEmail = createServerFn({ method: 'POST' })
   })
 
 export const confirmSenderEmail = createServerFn({ method: 'POST' })
-  .validator((d: unknown) => z.object({ token: z.string().uuid() }).parse(d))
+  .validator((d: unknown) =>
+    z
+      .object({
+        token: z.string().trim(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-    const { data: row, error } = await supabaseAdmin
-      .from('sender_emails')
-      .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
-      .eq('confirm_token', data.token)
-      .select('email')
-      .maybeSingle()
-    if (error) throw new Error(error.message)
-    if (!row) return { ok: false as const }
-    return { ok: true as const, email: row.email }
+    const token = data.token
+
+    // 1. Try supabaseAdmin if SUPABASE_SERVICE_ROLE_KEY is set in the environment
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+        const { data: row, error } = await supabaseAdmin
+          .from('sender_emails')
+          .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+          .eq('confirm_token', token)
+          .select('email')
+          .maybeSingle()
+        if (!error && row) {
+          return { ok: true as const, email: row.email }
+        }
+      } catch (err) {
+        console.warn('[confirmSenderEmail] supabaseAdmin error, falling back:', err)
+      }
+    }
+
+    // 2. Fallback: use user session from authorization header
+    try {
+      const request = getRequest()
+      const authHeader = request?.headers?.get('authorization')
+      const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : null
+
+      const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
+      const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY
+
+      if (SUPABASE_URL && SUPABASE_KEY) {
+        const { createClient } = await import('@supabase/supabase-js')
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+          global: {
+            headers: bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {},
+          },
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+          },
+        })
+
+        const { data: row, error } = await supabase
+          .from('sender_emails')
+          .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+          .eq('confirm_token', token)
+          .select('email')
+          .maybeSingle()
+
+        if (!error && row) {
+          return { ok: true as const, email: row.email }
+        }
+      }
+    } catch (err) {
+      console.warn('[confirmSenderEmail] Fallback client error:', err)
+    }
+
+    return { ok: false as const }
   })
+

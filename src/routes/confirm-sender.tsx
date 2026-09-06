@@ -32,20 +32,60 @@ function ConfirmPage() {
   const [email, setEmail] = useState('')
 
   useEffect(() => {
-    if (!token) {
+    const cleanToken = token?.trim()
+    if (!cleanToken) {
       setState('error')
       return
     }
-    confirmSenderEmail({ data: { token } })
-      .then((res) => {
-        if (res.ok) {
-          setEmail(res.email ?? '')
-          setState('done')
-        } else {
-          setState('error')
+
+    let isMounted = true
+
+    async function handleConfirm() {
+      // 1. Try server function
+      try {
+        const res = await confirmSenderEmail({ data: { token: cleanToken! } })
+        if (res?.ok) {
+          if (isMounted) {
+            setEmail(res.email ?? '')
+            setState('done')
+          }
+          return
         }
-      })
-      .catch(() => setState('error'))
+      } catch (err) {
+        console.warn('Server confirmation failed, attempting client fallback:', err)
+      }
+
+      // 2. Client-side fallback if user is authenticated in browser session
+      try {
+        const { supabase } = await import('@/integrations/supabase/client')
+        const { data: row, error } = await supabase
+          .from('sender_emails')
+          .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+          .eq('confirm_token', cleanToken!)
+          .select('email')
+          .maybeSingle()
+
+        if (!error && row) {
+          if (isMounted) {
+            setEmail(row.email ?? '')
+            setState('done')
+          }
+          return
+        }
+      } catch (err) {
+        console.error('Client confirmation error:', err)
+      }
+
+      if (isMounted) {
+        setState('error')
+      }
+    }
+
+    void handleConfirm()
+
+    return () => {
+      isMounted = false
+    }
   }, [token])
 
   return (
